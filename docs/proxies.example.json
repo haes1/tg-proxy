@@ -1,0 +1,4 @@
+[
+  {"server": "1.2.3.4", "port": 443, "secret": "ee0123456789abcdef0123456789abcdef6578616d706c652e636f6d"},
+  {"server": "proxy.example.org", "port": 8443, "secret": "dd0123456789abcdef0123456789abcdef"}
+]
