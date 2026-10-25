@@ -11643,4 +11643,25 @@
     <string name="ProxyPickerNothingFound">Рабочих прокси не найдено. Попробуйте позже.</string>
     <string name="ProxyPickerNoList">Не удалось получить список прокси.</string>
     <string name="ProxyPickerCancelled">Отменено</string>
+    <string name="ProxyPickerHeadline">Подбор прокси</string>
+    <string name="ProxyPickerHeadlineChecking">Ищем быстрый путь</string>
+    <string name="ProxyPickerHeadlineDone">Путь найден</string>
+    <string name="ProxyPickerPillIdle">Готов к подбору</string>
+    <string name="ProxyPickerPillChecking">Проверяем доступ</string>
+    <string name="ProxyPickerPillDone">Подключено</string>
+    <string name="ProxyPickerDoneInfo">Включили самый быстрый прокси. Остальные рабочие сохранили про запас.</string>
+    <string name="ProxyPickerResultSub">%1$d мс · запасных %2$d</string>
+    <string name="ProxyPickerStatChecked">проверено</string>
+    <string name="ProxyPickerStatWorking">рабочих</string>
+    <string name="ProxyPickerStatBest">лучший, мс</string>
+    <string name="ProxyPickerContinue">Продолжить</string>
+    <string name="ProxyPickerAgain">Подобрать заново</string>
+    <string name="TelezhkaIntroTitle1">Связь, которая находит дорогу сама</string>
+    <string name="TelezhkaIntroText1">Если сеть закрыта, Тележка проверит десятки прокси прямо на телефоне и выберет самый быстрый.</string>
+    <string name="TelezhkaIntroTitle2">Всегда держит запасной путь</string>
+    <string name="TelezhkaIntroText2">Рабочие прокси сохраняются про запас. Упал один — переключимся на следующий.</string>
+    <string name="TelezhkaIntroTitle3">Ваши чаты остаются вашими</string>
+    <string name="TelezhkaIntroText3">Переписка шифруется так же, как в официальном клиенте. Прокси видят только ваш IP, но не сообщения.</string>
+    <string name="TelezhkaIntroNext">Дальше</string>
+    <string name="TelezhkaIntroStart">Начать</string>
 </resources>

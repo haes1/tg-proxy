@@ -12,11 +12,13 @@ import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Typeface;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -36,7 +38,9 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ProxyDotGridView;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.utils.proxy.ProxySettings;
 
@@ -76,17 +80,41 @@ public class ProxyPickerActivity extends BaseFragment {
 
     private static class Candidate {
         final ProxySettings settings;
+        final int index;
         boolean done;
         boolean responded;
         long ping;
 
-        Candidate(ProxySettings settings) {
+        Candidate(ProxySettings settings, int index) {
             this.settings = settings;
+            this.index = index;
         }
     }
 
+    private static final int INK = 0xFF0D0F14;
+    private static final int PANEL = 0xFF161A22;
+    private static final int TEXT = 0xFFECEFF4;
+    private static final int MUTE = 0xFF8B93A3;
+    private static final int SIGNAL = 0xFFFF6B3D;
+    private static final int OK_COLOR = 0xFF3DDC97;
+
+    private final boolean autoStart;
+    private Runnable onContinue;
+
     private ButtonWithCounterView pickButton;
     private TextView statusTextView;
+    private TextView titleTextView;
+    private TextView pillTextView;
+    private View pillDot;
+    private ProxyDotGridView gridView;
+    private TextView checkedValue;
+    private TextView workingValue;
+    private TextView bestValue;
+    private LinearLayout resultView;
+    private TextView resultTitle;
+    private TextView resultSubtitle;
+    private int bestIndex = -1;
+    private long bestPing;
 
     private final ArrayList<Candidate> candidates = new ArrayList<>();
     private int nextIndex;
@@ -96,6 +124,20 @@ public class ProxyPickerActivity extends BaseFragment {
     private boolean inProgress;
     private boolean destroyed;
     private int generation;
+
+    public ProxyPickerActivity() {
+        this(false);
+    }
+
+    // autoStart: begin picking as soon as the screen opens (used on first launch)
+    public ProxyPickerActivity(boolean autoStart) {
+        this.autoStart = autoStart;
+    }
+
+    // Shown as "Continue" after a successful pick (first-launch flow)
+    public void setOnContinue(Runnable onContinue) {
+        this.onContinue = onContinue;
+    }
 
     @Override
     public boolean onFragmentCreate() {
@@ -113,8 +155,11 @@ public class ProxyPickerActivity extends BaseFragment {
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonDrawable(new BackDrawable(false));
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(getString(R.string.ProxyPickerTitle));
+        actionBar.setAllowOverlayTitle(false);
+        actionBar.setTitle("");
+        actionBar.setBackgroundColor(INK);
+        actionBar.setItemsColor(TEXT, false);
+        actionBar.setCastShadows(false);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -124,45 +169,163 @@ public class ProxyPickerActivity extends BaseFragment {
             }
         });
 
+        FrameLayout root = new FrameLayout(context);
+        root.setBackgroundColor(INK);
         ScrollView scrollView = new ScrollView(context);
-        scrollView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        scrollView.setVerticalScrollBarEnabled(false);
+        root.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, 0, 0, 88));
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(dp(20), dp(24), dp(20), dp(24));
+        layout.setPadding(dp(22), dp(4), dp(22), dp(16));
         scrollView.addView(layout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
 
-        TextView infoTextView = new TextView(context);
-        infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        infoTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        infoTextView.setText(getString(R.string.ProxyPickerInfo));
-        layout.addView(infoTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        LinearLayout pill = new LinearLayout(context);
+        pill.setOrientation(LinearLayout.HORIZONTAL);
+        pill.setGravity(Gravity.CENTER_VERTICAL);
+        pill.setPadding(dp(12), dp(6), dp(12), dp(6));
+        pill.setBackground(Theme.createRoundRectDrawable(dp(20), PANEL));
+        pillDot = new View(context);
+        pillDot.setBackground(Theme.createCircleDrawable(dp(8), MUTE));
+        pill.addView(pillDot, LayoutHelper.createLinear(8, 8, 0, 0, 8, 0));
+        pillTextView = new TextView(context);
+        pillTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        pillTextView.setTypeface(AndroidUtilities.bold());
+        pillTextView.setTextColor(TEXT);
+        pillTextView.setText(getString(R.string.ProxyPickerPillIdle));
+        pill.addView(pillTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        layout.addView(pill, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT));
+
+        titleTextView = new TextView(context);
+        titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 28);
+        titleTextView.setTypeface(AndroidUtilities.bold());
+        titleTextView.setTextColor(TEXT);
+        titleTextView.setText(getString(R.string.ProxyPickerHeadline));
+        layout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 18, 0, 0));
+
+        statusTextView = new TextView(context);
+        statusTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        statusTextView.setLineSpacing(dp(2), 1f);
+        statusTextView.setTextColor(MUTE);
+        statusTextView.setText(getString(R.string.ProxyPickerInfo));
+        layout.addView(statusTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 10, 0, 0));
+
+        gridView = new ProxyDotGridView(context);
+        gridView.setCount(48);
+        layout.addView(gridView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 24, 0, 18));
+
+        LinearLayout stats = new LinearLayout(context);
+        stats.setOrientation(LinearLayout.HORIZONTAL);
+        checkedValue = addStat(context, stats, getString(R.string.ProxyPickerStatChecked), TEXT, 0);
+        workingValue = addStat(context, stats, getString(R.string.ProxyPickerStatWorking), OK_COLOR, 8);
+        bestValue = addStat(context, stats, getString(R.string.ProxyPickerStatBest), SIGNAL, 8);
+        layout.addView(stats, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        resultView = new LinearLayout(context);
+        resultView.setOrientation(LinearLayout.HORIZONTAL);
+        resultView.setGravity(Gravity.CENTER_VERTICAL);
+        resultView.setPadding(dp(14), dp(14), dp(14), dp(14));
+        resultView.setBackground(Theme.createRoundRectDrawable(dp(16), PANEL));
+        View resultDot = new View(context);
+        resultDot.setBackground(Theme.createCircleDrawable(dp(12), SIGNAL));
+        resultView.addView(resultDot, LayoutHelper.createLinear(12, 12, 0, 0, 12, 0));
+        LinearLayout resultTexts = new LinearLayout(context);
+        resultTexts.setOrientation(LinearLayout.VERTICAL);
+        resultTitle = new TextView(context);
+        resultTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        resultTitle.setTypeface(Typeface.create(Typeface.MONOSPACE, Typeface.BOLD));
+        resultTitle.setTextColor(TEXT);
+        resultTitle.setSingleLine(true);
+        resultTitle.setEllipsize(TextUtils.TruncateAt.END);
+        resultTexts.addView(resultTitle);
+        resultSubtitle = new TextView(context);
+        resultSubtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        resultSubtitle.setTextColor(MUTE);
+        resultTexts.addView(resultSubtitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        resultView.addView(resultTexts, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+        resultView.setAlpha(0f);
+        resultView.setVisibility(View.GONE);
+        layout.addView(resultView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 14, 0, 0));
+
+        TextView warningTextView = new TextView(context);
+        warningTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        warningTextView.setTextColor(MUTE);
+        warningTextView.setText(getString(R.string.ProxyPickerWarning));
+        layout.addView(warningTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 14, 0, 0));
 
         pickButton = new ButtonWithCounterView(context, getResourceProvider());
         pickButton.setText(getString(R.string.ProxyPickerButton), false);
         pickButton.setOnClickListener(v -> {
             if (inProgress) {
                 cancel();
+            } else if (resultView.getVisibility() == View.VISIBLE && onContinue != null) {
+                onContinue.run();
             } else {
                 start();
             }
         });
-        layout.addView(pickButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 20, 0, 0));
+        root.addView(pickButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 54, Gravity.BOTTOM, 22, 0, 22, 22));
 
-        statusTextView = new TextView(context);
-        statusTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        statusTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-        statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        layout.addView(statusTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 16, 0, 0));
-
-        TextView warningTextView = new TextView(context);
-        warningTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        warningTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-        warningTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
-        warningTextView.setText(getString(R.string.ProxyPickerWarning));
-        layout.addView(warningTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 24, 0, 0));
-
-        fragmentView = scrollView;
+        fragmentView = root;
+        if (autoStart) {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (!inProgress && !destroyed) {
+                    start();
+                }
+            }, 350);
+        }
         return fragmentView;
+    }
+
+    private TextView addStat(Context context, LinearLayout parent, String label, int color, int leftMargin) {
+        LinearLayout tile = new LinearLayout(context);
+        tile.setOrientation(LinearLayout.VERTICAL);
+        tile.setPadding(dp(12), dp(12), dp(12), dp(12));
+        tile.setBackground(Theme.createRoundRectDrawable(dp(14), PANEL));
+        TextView value = new TextView(context);
+        value.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
+        value.setTypeface(Typeface.create(Typeface.MONOSPACE, Typeface.BOLD));
+        value.setTextColor(color);
+        value.setText("0");
+        tile.addView(value);
+        TextView name = new TextView(context);
+        name.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+        name.setTextColor(MUTE);
+        name.setText(label);
+        tile.addView(name);
+        parent.addView(tile, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, leftMargin, 0, 0, 0));
+        return value;
+    }
+
+    private void setPill(String text, int dotColor, boolean blink) {
+        pillTextView.setText(text);
+        pillDot.setBackground(Theme.createCircleDrawable(dp(8), dotColor));
+        pillDot.animate().cancel();
+        pillDot.setAlpha(1f);
+        if (blink) {
+            pillDot.animate().alpha(0.25f).setDuration(500).withEndAction(() -> {
+                if (inProgress && !destroyed) {
+                    setPill(pillTextView.getText().toString(), dotColor, true);
+                }
+            }).start();
+        }
+    }
+
+    private void showResult(String title, String subtitle) {
+        resultTitle.setText(title);
+        resultSubtitle.setText(subtitle);
+        resultView.setVisibility(View.VISIBLE);
+        resultView.setTranslationY(dp(12));
+        resultView.animate().alpha(1f).translationY(0).setDuration(450).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
+    }
+
+    private void markBest(int index, long ping) {
+        if (bestIndex >= 0 && bestIndex != index) {
+            gridView.setState(bestIndex, ProxyDotGridView.OK);
+        }
+        bestIndex = index;
+        bestPing = ping;
+        gridView.setState(index, ProxyDotGridView.BEST);
+        bestValue.setText(String.valueOf(ping));
     }
 
     private void start() {
@@ -170,6 +333,17 @@ public class ProxyPickerActivity extends BaseFragment {
         final int gen = ++generation;
         pickButton.setText(getString(R.string.Cancel), true);
         statusTextView.setText(getString(R.string.ProxyPickerLoading));
+        titleTextView.setText(getString(R.string.ProxyPickerHeadlineChecking));
+        setPill(getString(R.string.ProxyPickerPillChecking), SIGNAL, true);
+        resultView.animate().cancel();
+        resultView.setVisibility(View.GONE);
+        resultView.setAlpha(0f);
+        bestIndex = -1;
+        bestPing = 0;
+        checkedValue.setText("0");
+        workingValue.setText("0");
+        bestValue.setText("—");
+        gridView.resetAll();
         Utilities.externalNetworkQueue.postRunnable(() -> {
             ArrayList<ProxySettings> list = parseProxyList(downloadList());
             if (list.isEmpty()) {
@@ -196,6 +370,21 @@ public class ProxyPickerActivity extends BaseFragment {
         }
         pickButton.setText(getString(R.string.ProxyPickerButton), true);
         statusTextView.setText(status);
+        titleTextView.setText(getString(R.string.ProxyPickerHeadline));
+        setPill(getString(R.string.ProxyPickerPillIdle), MUTE, false);
+    }
+
+    private void finishSuccess(ProxySettings settings, long ping, int spares) {
+        inProgress = false;
+        if (destroyed) {
+            return;
+        }
+        pickButton.setText(getString(onContinue != null ? R.string.ProxyPickerContinue : R.string.ProxyPickerAgain), true);
+        titleTextView.setText(getString(R.string.ProxyPickerHeadlineDone));
+        statusTextView.setText(getString(R.string.ProxyPickerDoneInfo));
+        setPill(getString(R.string.ProxyPickerPillDone), OK_COLOR, false);
+        bestValue.setText(String.valueOf(ping));
+        showResult(settings.getAddress() + " : " + settings.getPort(), formatString(R.string.ProxyPickerResultSub, ping, spares));
     }
 
     private static String downloadList() {
@@ -314,8 +503,9 @@ public class ProxyPickerActivity extends BaseFragment {
         }
         candidates.clear();
         for (ProxySettings settings : list) {
-            candidates.add(new Candidate(settings));
+            candidates.add(new Candidate(settings, candidates.size()));
         }
+        gridView.setCount(candidates.size());
         nextIndex = 0;
         running = 0;
         checkedCount = 0;
@@ -326,12 +516,17 @@ public class ProxyPickerActivity extends BaseFragment {
 
     private void updateProgress() {
         statusTextView.setText(formatString(R.string.ProxyPickerProgress, checkedCount, candidates.size(), workingCount));
+        checkedValue.setText(String.valueOf(checkedCount));
+        workingValue.setText(String.valueOf(workingCount));
     }
 
     private void scheduleChecks(int gen) {
         while (gen == generation && running < PARALLEL_CHECKS && nextIndex < candidates.size()) {
             final Candidate candidate = candidates.get(nextIndex++);
             running++;
+            if (!destroyed) {
+                gridView.setState(candidate.index, ProxyDotGridView.SCANNING);
+            }
             final Runnable timeout = () -> onCheckResult(gen, candidate, -1, false);
             AndroidUtilities.runOnUIThread(timeout, CHECK_TIMEOUT_MS);
             ConnectionsManager.getInstance(currentAccount).checkProxy(candidate.settings, time -> AndroidUtilities.runOnUIThread(() -> {
@@ -357,6 +552,10 @@ public class ProxyPickerActivity extends BaseFragment {
             workingCount++;
         }
         if (!destroyed) {
+            gridView.setState(candidate.index, time > 0 ? ProxyDotGridView.OK : ProxyDotGridView.BAD);
+            if (time > 0 && (bestPing == 0 || time < bestPing)) {
+                markBest(candidate.index, time);
+            }
             updateProgress();
         }
         scheduleChecks(gen);
@@ -375,7 +574,7 @@ public class ProxyPickerActivity extends BaseFragment {
             Collections.sort(working, (a, b) -> Long.compare(a.ping, b.ping));
             applyWorking(working);
             Candidate best = working.get(0);
-            finish(formatString(R.string.ProxyPickerDone, best.settings.getAddress(), best.ping, working.size() - 1));
+            finishSuccess(best.settings, best.ping, working.size() - 1);
             return;
         }
         if (!anyResponse && !isConnected()) {
@@ -394,6 +593,10 @@ public class ProxyPickerActivity extends BaseFragment {
 
     private void startTcpChecks(int gen) {
         statusTextView.setText(getString(R.string.ProxyPickerTcpCheck));
+        gridView.resetAll();
+        for (Candidate candidate : candidates) {
+            gridView.setState(candidate.index, ProxyDotGridView.SCANNING);
+        }
         final ArrayList<Candidate> list = new ArrayList<>(candidates);
         new Thread(() -> {
             ExecutorService executor = Executors.newFixedThreadPool(PARALLEL_CHECKS);
@@ -426,6 +629,13 @@ public class ProxyPickerActivity extends BaseFragment {
             AndroidUtilities.runOnUIThread(() -> {
                 if (gen != generation) {
                     return;
+                }
+                if (!destroyed) {
+                    for (Candidate candidate : list) {
+                        gridView.setState(candidate.index, candidate.ping > 0 ? ProxyDotGridView.OK : ProxyDotGridView.BAD);
+                    }
+                    workingValue.setText(String.valueOf(reachable.size()));
+                    checkedValue.setText(String.valueOf(list.size()));
                 }
                 if (reachable.isEmpty()) {
                     finish(getString(R.string.ProxyPickerNothingFound));
@@ -465,10 +675,16 @@ public class ProxyPickerActivity extends BaseFragment {
                         SharedConfig.addProxy(new SharedConfig.ProxyInfo(rest.get(i).settings));
                     }
                     SharedConfig.saveProxyList();
-                    finish(formatString(R.string.ProxyPickerDone, candidate.settings.getAddress(), candidate.ping, rest.size()));
+                    if (!destroyed) {
+                        markBest(candidate.index, candidate.ping);
+                    }
+                    finishSuccess(candidate.settings, candidate.ping, rest.size());
                 } else if (SystemClock.elapsedRealtime() - startTime < CONNECT_WAIT_MS) {
                     AndroidUtilities.runOnUIThread(this, 500);
                 } else {
+                    if (!destroyed) {
+                        gridView.setState(candidate.index, ProxyDotGridView.BAD);
+                    }
                     SharedConfig.ProxyInfo failed = findProxy(candidate.settings);
                     if (failed != null) {
                         SharedConfig.deleteProxy(failed);
