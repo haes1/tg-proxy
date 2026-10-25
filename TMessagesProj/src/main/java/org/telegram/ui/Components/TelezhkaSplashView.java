@@ -31,11 +31,14 @@ public class TelezhkaSplashView extends View {
     private static final int FOLD = 0xFFFFD9CC;
     private static final int TEXT = 0xFFECEFF4;
     private static final int MUTE = 0xFF8B93A3;
-    private static final long DURATION = 1900;
+    private static final long DURATION = 2100;
+    private static final float PLANE_CX = 59, PLANE_CY = 57;
 
     private final Paint tilePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint planePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint foldPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint trailPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint ringPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint titlePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint taglinePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final Path plane = new Path();
@@ -54,6 +57,9 @@ public class TelezhkaSplashView extends View {
         tilePaint.setColor(SIGNAL);
         planePaint.setColor(0xFFFFFFFF);
         foldPaint.setColor(FOLD);
+        trailPaint.setColor(SIGNAL);
+        ringPaint.setColor(SIGNAL);
+        ringPaint.setStyle(Paint.Style.STROKE);
         titlePaint.setColor(TEXT);
         titlePaint.setTypeface(AndroidUtilities.bold());
         titlePaint.setTextSize(dp(32));
@@ -111,38 +117,76 @@ public class TelezhkaSplashView extends View {
         return 1 - (1 - x) * (1 - x) * (1 - x);
     }
 
+    // Point on the flight arc: from bottom-left, up and over, onto the tile center
+    private void flight(float f, float cx, float cy, float[] out) {
+        float x0 = cx - dp(190), y0 = cy + dp(170);
+        float x1 = cx - dp(170), y1 = cy - dp(120);
+        float u = 1 - f;
+        out[0] = u * u * x0 + 2 * u * f * x1 + f * f * cx;
+        out[1] = u * u * y0 + 2 * u * f * y1 + f * f * cy;
+    }
+
+    private final float[] point = new float[2];
+
     @Override
     protected void onDraw(Canvas canvas) {
         long ms = (long) (t * DURATION);
-        float exit = range(ms, 1550, 1900);
+        float exit = decelerate(range(ms, 1700, 2100));
         float alpha = 1 - exit;
         canvas.drawColor((Math.round(alpha * 255) << 24) | (INK & 0xFFFFFF));
         if (alpha <= 0) {
             return;
         }
 
+        // Same size and position as the system splash tile (240dp icon, 112dp tile, screen center)
         float size = dp(112);
         float cx = getWidth() / 2f;
-        float cy = getHeight() / 2f - dp(40);
-        float exitScale = 1 + exit * 0.35f;
+        float cy = getHeight() / 2f;
+        float k = size / 120f;
+        float exitScale = 1 + exit * 0.5f;
 
-        float tile = overshoot(range(ms, 0, 520));
+        // Landing: the tile squashes and springs back, a ring ripples out
+        float land = range(ms, 720, 1150);
+        float squash = land <= 0 ? 1 : 1 - 0.1f * (float) Math.sin(land * Math.PI) * (1 - land) * 2.2f + 0.04f * (float) Math.sin(land * Math.PI * 2) * (1 - land);
+        float ring = range(ms, 720, 1400);
+        if (ring > 0 && ring < 1) {
+            ringPaint.setStrokeWidth(dp(3) * (1 - ring));
+            ringPaint.setAlpha(Math.round((1 - ring) * 200 * alpha));
+            float rs = size / 2 + dp(60) * decelerate(ring);
+            rect.set(cx - rs, cy - rs, cx + rs, cy + rs);
+            canvas.drawRoundRect(rect, rs * 28 / 60, rs * 28 / 60, ringPaint);
+        }
+
         canvas.save();
         canvas.translate(cx, cy);
-        canvas.scale(tile * exitScale, tile * exitScale);
-        canvas.rotate((1 - range(ms, 0, 520)) * -20);
+        canvas.scale((2 - squash) * exitScale, squash * exitScale);
         rect.set(-size / 2, -size / 2, size / 2, size / 2);
         tilePaint.setAlpha(Math.round(alpha * 255));
         canvas.drawRoundRect(rect, size * 28 / 120, size * 28 / 120, tilePaint);
         canvas.restore();
 
-        float fly = decelerate(range(ms, 300, 950));
+        // Flight with a dotted trail
+        float fly = decelerate(range(ms, 120, 760));
         if (fly > 0) {
-            float k = size / 120f;
+            if (fly < 1) {
+                for (int i = 1; i <= 7; i++) {
+                    float f = fly - i * 0.045f;
+                    if (f <= 0) {
+                        break;
+                    }
+                    flight(f, cx, cy, point);
+                    trailPaint.setAlpha(Math.round((1 - i / 8f) * 200 * (1 - fly * 0.6f)));
+                    canvas.drawCircle(point[0], point[1], dp(5) * (1 - i / 9f), trailPaint);
+                }
+            }
+            flight(fly, cx, cy, point);
+            float scale = (0.55f + 0.45f * fly) * k * exitScale;
             canvas.save();
-            canvas.translate(cx - size / 2 - (1 - fly) * dp(120), cy - size / 2 + (1 - fly) * dp(90));
-            canvas.scale(k * (0.4f + 0.6f * fly) * exitScale, k * (0.4f + 0.6f * fly) * exitScale, 60, 60);
-            int a = Math.round(Math.min(1, fly * 3) * alpha * 255);
+            canvas.translate(point[0], point[1]);
+            canvas.rotate((1 - fly) * -35);
+            canvas.scale(scale, scale);
+            canvas.translate(-PLANE_CX, -PLANE_CY);
+            int a = Math.round(alpha * 255);
             planePaint.setAlpha(a);
             foldPaint.setAlpha(a);
             canvas.drawPath(plane, planePaint);
@@ -150,11 +194,11 @@ public class TelezhkaSplashView extends View {
             canvas.restore();
         }
 
-        float text = decelerate(range(ms, 800, 1200));
+        float text = decelerate(range(ms, 950, 1400));
         if (text > 0) {
             titlePaint.setAlpha(Math.round(text * alpha * 255));
             taglinePaint.setAlpha(Math.round(text * alpha * 255));
-            float y = cy + size / 2 + dp(56) + (1 - text) * dp(12);
+            float y = cy + size / 2 + dp(64) + (1 - text) * dp(16);
             canvas.drawText("тележка", cx, y, titlePaint);
             canvas.drawText("довезёт сообщения сквозь любые блокировки", cx, y + dp(28), taglinePaint);
         }

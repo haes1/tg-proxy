@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- System splash (Android 12+): only the orange tile, the plane flies in inside the app (TelezhkaSplashView) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="240dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+    <path
+        android:fillColor="#FF6B3D"
+        android:pathData="M90,64 L150,64 A26,26 0 0 1 176,90 L176,150 A26,26 0 0 1 150,176 L90,176 A26,26 0 0 1 64,150 L64,90 A26,26 0 0 1 90,64 Z" />
+</vector>
