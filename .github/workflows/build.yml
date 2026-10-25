@@ -21,6 +21,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Free disk space
         run: |
@@ -66,9 +68,16 @@ jobs:
           fi
           grep -n "APP_ID =\|PROXY_LIST_URL =" "$FILE"
 
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: native-arm64
+          max-size: 2G
+
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build
+        env:
+          USE_CCACHE: '1'
         run: ./gradlew :TMessagesProj_App:assembleAfatRelease --stacktrace
 
       - name: Rename APK
