@@ -83,12 +83,12 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p out
-          cp "$(find TMessagesProj_App/build/outputs/apk -name '*.apk' | head -n 1)" out/TG-Proxy-${{ github.run_number }}.apk
+          cp "$(find TMessagesProj_App/build/outputs/apk -name '*.apk' | head -n 1)" out/Telezhka-${{ github.run_number }}.apk
           ls -la out
 
       - uses: actions/upload-artifact@v4
         with:
-          name: TG-Proxy-apk
+          name: Telezhka-apk
           path: out/*.apk
 
       - name: Publish release
