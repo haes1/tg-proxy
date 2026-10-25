@@ -46,15 +46,16 @@ jobs:
         run: |
           FILE=TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
           if [ -z "$API_ID" ] || [ -z "$API_HASH" ]; then
-            echo "::error::Add TELEGRAM_API_ID and TELEGRAM_API_HASH secrets (Settings > Secrets and variables > Actions). Get them at https://my.telegram.org"
-            exit 1
+            # Temporary: builds with the official keys from BuildVars until own keys are added.
+            echo "::warning::TELEGRAM_API_ID / TELEGRAM_API_HASH secrets are not set, using the official keys from BuildVars. Get your own at https://my.telegram.org"
+          else
+            if ! [[ "$API_ID" =~ ^[0-9]+$ ]] || ! [[ "$API_HASH" =~ ^[0-9a-f]{32}$ ]]; then
+              echo "::error::TELEGRAM_API_ID must be a number and TELEGRAM_API_HASH 32 hex characters"
+              exit 1
+            fi
+            sed -i -E "s/(public static int APP_ID = )[0-9]+;/\1$API_ID;/" "$FILE"
+            sed -i -E "s/(public static String APP_HASH = )\"[0-9a-f]+\";/\1\"$API_HASH\";/" "$FILE"
           fi
-          if ! [[ "$API_ID" =~ ^[0-9]+$ ]] || ! [[ "$API_HASH" =~ ^[0-9a-f]{32}$ ]]; then
-            echo "::error::TELEGRAM_API_ID must be a number and TELEGRAM_API_HASH 32 hex characters"
-            exit 1
-          fi
-          sed -i -E "s/(public static int APP_ID = )[0-9]+;/\1$API_ID;/" "$FILE"
-          sed -i -E "s/(public static String APP_HASH = )\"[0-9a-f]+\";/\1\"$API_HASH\";/" "$FILE"
           if [ -n "$PROXY_LIST_URL" ]; then
             if ! [[ "$PROXY_LIST_URL" =~ ^https?://[^\"\\]+$ ]]; then
               echo "::error::PROXY_LIST_URL must start with http:// or https://"
