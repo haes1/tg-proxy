@@ -39,14 +39,17 @@ import java.util.Locale;
  */
 public class TelezhkaUpdater {
 
+    // update.json is a release file: it is served without the GitHub API limit of 60 requests an hour,
+    // which people behind a shared VPN address run out of. The API stays as a fallback.
+    private static final String UPDATE_JSON_URL = "https://github.com/" + BuildVars.GITHUB_REPO + "/releases/latest/download/update.json";
     private static final String RELEASES_URL = "https://api.github.com/repos/" + BuildVars.GITHUB_REPO + "/releases/latest";
-    private static final long CHECK_PERIOD_MS = 6 * 60 * 60 * 1000L;
+    private static final long CHECK_PERIOD_MS = 60 * 60 * 1000L;
     private static final String PREFS = "telezhka_updater";
-    private static final String KEY_LAST_CHECK = "last_check";
     private static final String KEY_SKIPPED = "skipped_build";
     private static final int MAX_ITEMS = 4;
 
     private static boolean checking;
+    private static long lastCheck;
     private static boolean shownThisLaunch;
     private static Release pending;
 
@@ -69,8 +72,9 @@ public class TelezhkaUpdater {
             show(fragment, pending);
             return;
         }
-        long now = System.currentTimeMillis();
-        if (shownThisLaunch || now - prefs().getLong(KEY_LAST_CHECK, 0) < CHECK_PERIOD_MS && prefs().getLong(KEY_LAST_CHECK, 0) <= now) {
+        // at every start of the app, then at most once an hour while it runs
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (shownThisLaunch || lastCheck != 0 && now - lastCheck < CHECK_PERIOD_MS) {
             return;
         }
         checking = true;
@@ -81,7 +85,7 @@ public class TelezhkaUpdater {
                 if (release == null) {
                     return;
                 }
-                prefs().edit().putLong(KEY_LAST_CHECK, System.currentTimeMillis()).apply();
+                lastCheck = android.os.SystemClock.elapsedRealtime();
                 if (release.build > BuildVars.TELEZHKA_BUILD && release.build != prefs().getInt(KEY_SKIPPED, 0)) {
                     pending = release;
                     show(fragment, release);
@@ -91,6 +95,37 @@ public class TelezhkaUpdater {
     }
 
     private static Release fetch() {
+        Release release = fetchUpdateJson();
+        return release != null ? release : fetchApi();
+    }
+
+    // {"build":25,"apk":"https://…/Telezhka-25.apk","size":60000000,"notes":["…"]}
+    private static Release fetchUpdateJson() {
+        String json = get(UPDATE_JSON_URL);
+        if (json == null) {
+            return null;
+        }
+        try {
+            JSONObject root = new JSONObject(json);
+            Release release = new Release();
+            release.build = root.getInt("build");
+            release.apkUrl = root.getString("apk");
+            release.size = root.optLong("size", 0);
+            JSONArray notes = root.optJSONArray("notes");
+            for (int i = 0; notes != null && i < notes.length() && release.items.size() < MAX_ITEMS; i++) {
+                String note = notes.optString(i, "").trim();
+                if (!note.isEmpty()) {
+                    release.items.add(note);
+                }
+            }
+            return release;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
+    private static Release fetchApi() {
         String json = get(RELEASES_URL);
         if (json == null) {
             return null;

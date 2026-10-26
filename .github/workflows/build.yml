@@ -116,6 +116,18 @@ jobs:
             git log -1 --format=%B | grep -E '^- ' | head -n 4 || true
           } > out/notes.md
           cat out/notes.md
+          # update.json for the in-app updater (read without the GitHub API rate limit)
+          APK="Telezhka-${{ github.run_number }}.apk"
+          python3 - "$APK" "${{ github.run_number }}" "${{ github.repository }}" <<'PY'
+          import json, os, subprocess, sys
+          apk, build, repo = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+          msg = subprocess.run(["git", "log", "-1", "--format=%B"], capture_output=True, text=True).stdout
+          notes = [l[2:].strip() for l in msg.splitlines() if l.startswith("- ")][:4]
+          data = {"build": build, "apk": f"https://github.com/{repo}/releases/download/build-{build}/{apk}",
+                  "size": os.path.getsize(f"out/{apk}"), "notes": notes}
+          json.dump(data, open("out/update.json", "w"), ensure_ascii=False)
+          print(data)
+          PY
 
       - uses: actions/upload-artifact@v4
         with:
@@ -128,4 +140,6 @@ jobs:
           tag_name: build-${{ github.run_number }}
           name: Сборка ${{ github.run_number }}
           body_path: out/notes.md
-          files: out/*.apk
+          files: |
+            out/*.apk
+            out/update.json
