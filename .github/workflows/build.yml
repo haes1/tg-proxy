@@ -6,6 +6,9 @@ on:
     branches: [master, main]
     paths-ignore:
       - '**.md'
+      - 'proxies.json'
+      - '.github/scripts/**'
+      - '.github/workflows/update-proxies.yml'
 
 concurrency:
   group: build-${{ github.ref }}
