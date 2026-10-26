@@ -3527,8 +3527,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo_2).mutate();
                 logoDrawable.setBounds(0, dp(2), logoDrawable.getIntrinsicWidth(), dp(2) + logoDrawable.getIntrinsicHeight());
                 logoDrawable.setColorFilter(getThemedColor(Theme.key_telegram_color_dialogsLogo), PorterDuff.Mode.MULTIPLY);
-                SpannableStringBuilder ssb = new SpannableStringBuilder(getString(R.string.AppName));
-                ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                // Telezhka: our name in the display font instead of the Telegram wordmark image
+                SpannableStringBuilder ssb = new SpannableStringBuilder("тележка");
+                ssb.setSpan(new android.text.style.MetricAffectingSpan() {
+                    @Override
+                    public void updateMeasureState(@NonNull android.text.TextPaint paint) {
+                        paint.setTypeface(AndroidUtilities.display());
+                    }
+
+                    @Override
+                    public void updateDrawState(android.text.TextPaint paint) {
+                        paint.setTypeface(AndroidUtilities.display());
+                    }
+                }, 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 actionBar.setTitle(ssb, statusDrawable);
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }

@@ -179,6 +179,8 @@ public class MusicActivity extends BaseFragment implements NotificationCenter.No
             }
         });
 
+        // The action bar lives inside our root, so the full player can cover it
+        actionBar.setAddToContainer(false);
         FrameLayout root = new FrameLayout(context);
         root.setBackgroundColor(INK);
         ambient = new AmbientView(context);
@@ -188,7 +190,7 @@ public class MusicActivity extends BaseFragment implements NotificationCenter.No
         scrollView.setVerticalScrollBarEnabled(false);
         LinearLayout content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(0, 0, 0, dp(120));
+        content.setPadding(0, AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight(), 0, dp(120));
         scrollView.addView(content, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
         root.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -243,10 +245,13 @@ public class MusicActivity extends BaseFragment implements NotificationCenter.No
         mineList.setOrientation(LinearLayout.VERTICAL);
         home.addView(mineList, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+        root.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
+
         miniPlayer = new MiniPlayer(context);
         root.addView(miniPlayer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 70, Gravity.BOTTOM, 12, 0, 12, 16));
 
         fullPlayer = new FullPlayer(context);
+        fullPlayer.setElevation(dp(24));
         root.addView(fullPlayer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         fragmentView = root;
@@ -1174,6 +1179,7 @@ public class MusicActivity extends BaseFragment implements NotificationCenter.No
             }
             open = true;
             update();
+            miniPlayer.animate().alpha(0f).setDuration(200).start();
             setVisibility(VISIBLE);
             setTranslationY(getHeight() > 0 ? getHeight() : AndroidUtilities.displaySize.y);
             animate().translationY(0).setDuration(520).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
@@ -1181,6 +1187,7 @@ public class MusicActivity extends BaseFragment implements NotificationCenter.No
 
         void close() {
             open = false;
+            miniPlayer.animate().alpha(1f).setDuration(250).start();
             animate().translationY(getHeight()).setDuration(380).setInterpolator(CubicBezierInterpolator.EASE_IN).withEndAction(() -> {
                 if (!open) {
                     setVisibility(GONE);
