@@ -11681,4 +11681,11 @@
     <string name="TelezhkaPillDirect">напрямую</string>
     <string name="TelezhkaPillProxy">прокси</string>
     <string name="TelezhkaPillMs">%1$d мс</string>
+    <string name="TelezhkaListSourceTitle">Источник списка прокси</string>
+    <string name="TelezhkaListSourceLabel">Откуда брать список</string>
+    <string name="TelezhkaListSourceDefault">GitHub</string>
+    <string name="TelezhkaListSourceRow">Источник списка: %1$s</string>
+    <string name="TelezhkaListSourceInfo">Адрес файла со списком прокси в формате JSON. Оставьте пустым, чтобы брать список из репозитория на GitHub.</string>
+    <string name="TelezhkaListSourceReset">По умолчанию</string>
+    <string name="TelezhkaListSourceBad">Нужен адрес, который начинается с https://</string>
 </resources>

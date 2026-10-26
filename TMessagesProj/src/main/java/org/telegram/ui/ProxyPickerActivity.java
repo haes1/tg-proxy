@@ -11,6 +11,7 @@ import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.SystemClock;
@@ -36,10 +37,12 @@ import org.telegram.messenger.TelezhkaPingMonitor;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ProxyDotGridView;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
@@ -104,6 +107,7 @@ public class ProxyPickerActivity extends BaseFragment {
 
     private ButtonWithCounterView pickButton;
     private TextView statusTextView;
+    private TextView sourceTextView;
     private TextView titleTextView;
     private TextView pillTextView;
     private View pillDot;
@@ -253,6 +257,15 @@ public class ProxyPickerActivity extends BaseFragment {
         warningTextView.setText(getString(R.string.ProxyPickerWarning));
         layout.addView(warningTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 14, 0, 0));
 
+        sourceTextView = new TextView(context);
+        sourceTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        sourceTextView.setTypeface(AndroidUtilities.bold());
+        sourceTextView.setTextColor(SIGNAL);
+        sourceTextView.setPadding(0, dp(10), 0, dp(10));
+        sourceTextView.setOnClickListener(v -> showListUrlDialog(this, this::updateSourceText));
+        updateSourceText();
+        layout.addView(sourceTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+
         pickButton = new ButtonWithCounterView(context, getResourceProvider());
         pickButton.setText(getString(R.string.ProxyPickerButton), false);
         pickButton.setOnClickListener(v -> {
@@ -275,6 +288,12 @@ public class ProxyPickerActivity extends BaseFragment {
             }, 350);
         }
         return fragmentView;
+    }
+
+    private void updateSourceText() {
+        if (sourceTextView != null) {
+            sourceTextView.setText(formatString(R.string.TelezhkaListSourceRow, getListSourceLabel()));
+        }
     }
 
     private TextView addStat(Context context, LinearLayout parent, String label, int color, int leftMargin) {
@@ -346,7 +365,13 @@ public class ProxyPickerActivity extends BaseFragment {
         bestValue.setText("—");
         gridView.resetAll();
         Utilities.externalNetworkQueue.postRunnable(() -> {
-            ArrayList<ProxySettings> list = parseProxyList(downloadList());
+            ArrayList<ProxySettings> list = new ArrayList<>();
+            for (String url : getListUrls()) {
+                list = parseProxyList(downloadList(url));
+                if (!list.isEmpty()) {
+                    break;
+                }
+            }
             if (list.isEmpty()) {
                 list = loadFallbackList();
             }
@@ -402,10 +427,140 @@ public class ProxyPickerActivity extends BaseFragment {
         showResult(settings.getAddress() + " : " + settings.getPort(), formatString(R.string.ProxyPickerResultSub, ping, spares));
     }
 
-    private static String downloadList() {
+    public static final String PREF_LIST_URL = "telezhka_proxy_list_url";
+
+    // Address typed in the app, or null to use the built-in ones
+    public static String getCustomListUrl() {
+        String url = MessagesController.getGlobalMainSettings().getString(PREF_LIST_URL, null);
+        return TextUtils.isEmpty(url) ? null : url;
+    }
+
+    public static ArrayList<String> getListUrls() {
+        ArrayList<String> urls = new ArrayList<>();
+        String custom = getCustomListUrl();
+        if (custom != null) {
+            urls.add(custom);
+        }
+        urls.add(BuildVars.PROXY_LIST_URL);
+        for (String mirror : BuildVars.PROXY_LIST_MIRRORS) {
+            if (!urls.contains(mirror)) {
+                urls.add(mirror);
+            }
+        }
+        return urls;
+    }
+
+    // Short label of the list source for the UI: host of the custom address, or "GitHub"
+    public static String getListSourceLabel() {
+        String custom = getCustomListUrl();
+        if (custom == null) {
+            return getString(R.string.TelezhkaListSourceDefault);
+        }
+        try {
+            String host = new URL(custom).getHost();
+            return TextUtils.isEmpty(host) ? custom : host;
+        } catch (Exception e) {
+            return custom;
+        }
+    }
+
+    public static void showListUrlDialog(BaseFragment fragment, Runnable onChanged) {
+        Context context = fragment.getParentActivity();
+        if (context == null) {
+            return;
+        }
+        LinearLayout container = new LinearLayout(context);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setPadding(dp(24), dp(4), dp(24), 0);
+        TextView info = new TextView(context);
+        info.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        info.setTextColor(MUTE);
+        info.setText(getString(R.string.TelezhkaListSourceInfo));
+        container.addView(info);
+        EditTextBoldCursor input = new EditTextBoldCursor(context);
+        input.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        input.setTextColor(TEXT);
+        input.setHintTextColor(MUTE);
+        input.setHint("https://my-server.ru/proxies.json");
+        input.setCursorColor(SIGNAL);
+        input.setCursorSize(dp(20));
+        input.setCursorWidth(1.5f);
+        input.setLineColors(0xFF262C37, SIGNAL, 0xFFE5484D);
+        input.setSingleLine(true);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI);
+        String custom = getCustomListUrl();
+        if (custom != null) {
+            input.setText(custom);
+            input.setSelection(custom.length());
+        }
+        container.addView(input, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, 0, 12, 0, 0));
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(getString(R.string.TelezhkaListSourceTitle));
+        builder.setView(container);
+        builder.setPositiveButton(getString(R.string.Save), (d, which) -> {
+            // Used only if the button below could not be overridden; keeps the old address on bad input
+            String url = input.getText().toString().trim();
+            if (url.isEmpty()) {
+                MessagesController.getGlobalMainSettings().edit().remove(PREF_LIST_URL).apply();
+            } else if (isValidListUrl(url)) {
+                MessagesController.getGlobalMainSettings().edit().putString(PREF_LIST_URL, url).apply();
+            }
+            if (onChanged != null) {
+                onChanged.run();
+            }
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        if (custom != null) {
+            builder.setNeutralButton(getString(R.string.TelezhkaListSourceReset), (dialog, which) -> {
+                MessagesController.getGlobalMainSettings().edit().remove(PREF_LIST_URL).apply();
+                if (onChanged != null) {
+                    onChanged.run();
+                }
+            });
+        }
+        AlertDialog dialog = builder.create();
+        fragment.showDialog(dialog);
+        View save = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (save != null) {
+            save.setOnClickListener(v -> {
+                String url = input.getText().toString().trim();
+                if (url.isEmpty()) {
+                    MessagesController.getGlobalMainSettings().edit().remove(PREF_LIST_URL).apply();
+                } else if (!isValidListUrl(url)) {
+                    input.setErrorText(getString(R.string.TelezhkaListSourceBad));
+                    AndroidUtilities.shakeViewSpring(input, 6);
+                    return;
+                } else {
+                    MessagesController.getGlobalMainSettings().edit().putString(PREF_LIST_URL, url).apply();
+                }
+                dialog.dismiss();
+                if (onChanged != null) {
+                    onChanged.run();
+                }
+            });
+        }
+        AndroidUtilities.runOnUIThread(() -> {
+            input.requestFocus();
+            AndroidUtilities.showKeyboard(input);
+        }, 200);
+    }
+
+    private static boolean isValidListUrl(String url) {
+        if (url.length() > 2000 || !(url.startsWith("https://") || url.startsWith("http://"))) {
+            return false;
+        }
+        try {
+            return !TextUtils.isEmpty(new URL(url).getHost());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static String downloadList(String url) {
         HttpURLConnection connection = null;
         try {
-            connection = (HttpURLConnection) new URL(BuildVars.PROXY_LIST_URL).openConnection();
+            connection = (HttpURLConnection) new URL(url).openConnection();
             connection.setConnectTimeout(10000);
             connection.setReadTimeout(10000);
             connection.setInstanceFollowRedirects(true);

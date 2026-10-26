@@ -29,8 +29,13 @@ public class BuildVars {
     public static int APP_ID = 4;
     public static String APP_HASH = "014b35b6184100b085b0d0572f9b5103";
 
-    // JSON list for ProxyPickerActivity: [{"server":"1.2.3.4","port":443,"secret":"ee..."}]
-    public static String PROXY_LIST_URL = "https://example.com/proxies.json";
+    // JSON lists for ProxyPickerActivity: [{"server":"1.2.3.4","port":443,"secret":"ee..."}]
+    // Tried in order until one gives proxies: the address set in the app (Подключение → Источник списка),
+    // then PROXY_LIST_URL (proxies.json in the GitHub repo), then the mirrors.
+    public static String PROXY_LIST_URL = "https://raw.githubusercontent.com/haes1/tg-proxy/main/proxies.json";
+    public static String[] PROXY_LIST_MIRRORS = {
+            "https://cdn.jsdelivr.net/gh/haes1/tg-proxy@main/proxies.json"
+    };
 
     // SafetyNet key for Google Identity SDK, set it to empty to disable
     public static String SAFETYNET_KEY = "AIzaSyDqt8P-7F7CPCseMkOiVRgb1LY8RN1bvH8";

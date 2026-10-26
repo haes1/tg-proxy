@@ -69,6 +69,7 @@ public class ProxyStatusActivity extends BaseFragment implements NotificationCen
     private ProxyDotGridView lastGrid;
     private TextView lastInfo;
     private LinearLayout lastCard;
+    private TextView sourceValue;
     private final TelezhkaPingMonitor.Listener pingListener = ping -> updateHero();
 
     @Override
@@ -199,6 +200,31 @@ public class ProxyStatusActivity extends BaseFragment implements NotificationCen
         again.setOnClickListener(v -> presentFragment(new ProxyPickerActivity(true)));
         layout.addView(again, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 54, 0, 18, 0, 0));
 
+        layout.addView(header(context, getString(R.string.TelezhkaListSourceTitle)));
+        LinearLayout sourceCard = card(context);
+        LinearLayout sourceRow = new LinearLayout(context);
+        sourceRow.setOrientation(LinearLayout.HORIZONTAL);
+        sourceRow.setGravity(Gravity.CENTER_VERTICAL);
+        sourceRow.setPadding(dp(16), dp(14), dp(16), dp(14));
+        sourceRow.setBackground(Theme.createSelectorDrawable(0x14FFFFFF, Theme.RIPPLE_MASK_ALL));
+        TextView sourceLabel = new TextView(context);
+        sourceLabel.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        sourceLabel.setTextColor(TEXT);
+        sourceLabel.setText(getString(R.string.TelezhkaListSourceLabel));
+        sourceRow.addView(sourceLabel, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+        sourceValue = new TextView(context);
+        sourceValue.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        sourceValue.setTypeface(Typeface.MONOSPACE);
+        sourceValue.setTextColor(MUTE);
+        sourceValue.setSingleLine(true);
+        sourceValue.setEllipsize(TextUtils.TruncateAt.MIDDLE);
+        sourceValue.setMaxWidth(dp(170));
+        sourceRow.addView(sourceValue);
+        sourceRow.setOnClickListener(v -> ProxyPickerActivity.showListUrlDialog(this, this::updateSource));
+        sourceCard.addView(sourceRow);
+        layout.addView(sourceCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        updateSource();
+
         TextView all = new TextView(context);
         all.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         all.setTypeface(AndroidUtilities.bold());
@@ -219,6 +245,12 @@ public class ProxyStatusActivity extends BaseFragment implements NotificationCen
         fragmentView = root;
         updateAll();
         return fragmentView;
+    }
+
+    private void updateSource() {
+        if (sourceValue != null) {
+            sourceValue.setText(ProxyPickerActivity.getListSourceLabel());
+        }
     }
 
     private LinearLayout card(Context context) {
