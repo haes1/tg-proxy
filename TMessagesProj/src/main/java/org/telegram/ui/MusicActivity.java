@@ -483,7 +483,7 @@ public class MusicActivity extends BaseFragment implements NotificationCenter.No
 
     private static void setCover(BackupImageView view, TLRPC.Document document, TLRPC.WebDocument webThumb, int side) {
         if (document != null) {
-            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, side >= 200 ? 1000 : 160);
+            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, side >= 100 ? 1000 : 320);
             if (thumb != null) {
                 view.setImage(ImageLocation.getForDocument(thumb, document), side + "_" + side, null, null, document);
                 return;
