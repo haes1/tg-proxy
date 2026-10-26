@@ -9659,6 +9659,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isDialogsEndReached(int folderId) {
+        if (folderId == TelezhkaHiddenChats.FOLDER_ID) {
+            return true;
+        }
         return dialogsEndReached.get(folderId);
     }
 
@@ -9667,6 +9670,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isServerDialogsEndReached(int folderId) {
+        if (folderId == TelezhkaHiddenChats.FOLDER_ID) {
+            return true;
+        }
         return serverDialogsEndReached.get(folderId);
     }
 
@@ -12363,7 +12369,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void checkIfFolderEmpty(int folderId) {
-        if (folderId == 0) {
+        if (folderId == 0 || folderId == TelezhkaHiddenChats.FOLDER_ID) {
             return;
         }
         getMessagesStorage().checkIfFolderEmpty(folderId);
@@ -12466,6 +12472,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void loadDialogs(final int folderId, int offset, int count, boolean fromCache, Runnable onEmptyCallback) {
+        if (folderId == TelezhkaHiddenChats.FOLDER_ID) {
+            return;  // hidden chats are a local list, there is nothing to load
+        }
         if (loadingDialogs.get(folderId) || resetingDialogs) {
             return;
         }
@@ -22439,6 +22448,9 @@ public class MessagesController extends BaseController implements NotificationCe
                                 dialogId = encryptedChat.user_id;
                             }
                         }
+                        if (TelezhkaHiddenChats.isHidden(currentAccount, d.id)) {
+                            continue;
+                        }
                         if (sortingDialogFilter.includesDialog(getAccountInstance(), dialogId, d)) {
                             if (canAddToForward(d)) {
                                 dialogsForward.add(d);
@@ -22462,6 +22474,16 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         for (int a = 0, N = allDialogs.size(); a < N; a++) {
             TLRPC.Dialog d = allDialogs.get(a);
+            if (d instanceof TLRPC.TL_dialog && TelezhkaHiddenChats.isHidden(currentAccount, d.id)) {
+                // Telezhka: hidden chats live only in their own list, opened with a PIN
+                ArrayList<TLRPC.Dialog> hiddenDialogs = dialogsByFolder.get(TelezhkaHiddenChats.FOLDER_ID);
+                if (hiddenDialogs == null) {
+                    hiddenDialogs = new ArrayList<>();
+                    dialogsByFolder.put(TelezhkaHiddenChats.FOLDER_ID, hiddenDialogs);
+                }
+                hiddenDialogs.add(d);
+                continue;
+            }
             if (d instanceof TLRPC.TL_dialog) {
                 ArrayList<MessageObject> messageObjects = dialogMessage.get(d.id);
                 if (messageObjects != null) {

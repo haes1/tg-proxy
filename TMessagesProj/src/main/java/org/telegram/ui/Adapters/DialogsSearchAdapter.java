@@ -35,6 +35,7 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.TelezhkaHiddenChats;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -1007,6 +1008,18 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 searchResultMessages.clear();
             }
             searchWas = true;
+            // Telezhka: hidden chats are not found by search
+            for (int i = 0; i < result.size(); ++i) {
+                Object o = result.get(i);
+                long did = o instanceof TLRPC.User ? ((TLRPC.User) o).id : o instanceof TLRPC.Chat ? -((TLRPC.Chat) o).id : o instanceof TLRPC.EncryptedChat ? DialogObject.makeEncryptedDialogId(((TLRPC.EncryptedChat) o).id) : 0;
+                if (TelezhkaHiddenChats.isHidden(currentAccount, did)) {
+                    result.remove(i);
+                    if (i < names.size()) {
+                        names.remove(i);
+                    }
+                    i--;
+                }
+            }
             for (int i = 0; i < result.size(); ++i) {
                 if (!filter(result.get(i))) {
                     result.remove(i);

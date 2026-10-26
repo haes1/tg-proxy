@@ -126,7 +126,10 @@ import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Components.ProxyPingPillDrawable;
+import org.telegram.messenger.TelezhkaHiddenChats;
 import org.telegram.messenger.TelezhkaPingMonitor;
+import org.telegram.messenger.TelezhkaUpdater;
+import org.telegram.ui.Components.TelezhkaPopup;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -514,6 +517,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private ActionBarMenuSubItem proxyMenuSubItem;
     private static final int telezhka_ping_item = 1001;
     private static final int telezhka_music_item = 1002;
+    private static final int telezhka_hide_item = 1003;
+    private ActionBarMenuSubItem telezhkaHideItem;
+    private long telezhkaOpenedAt;
+    private boolean telezhkaNoticeShown;
     private ActionBarMenuItem pingPillItem;
     private ProxyPingPillDrawable pingPill;
     private final TelezhkaPingMonitor.Listener pingListener = ping -> updatePingPill();
@@ -2839,6 +2846,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     public boolean onFragmentCreate() {
+        telezhkaOpenedAt = android.os.SystemClock.elapsedRealtime();
         super.onFragmentCreate();
 
         if (arguments != null) {
@@ -3512,7 +3520,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 actionBar.setBackButtonDrawable(backDrawable = new BackDrawable(false));
             }
             if (folderId != 0) {
-                actionBar.setTitle(getString(R.string.ArchivedChats));
+                actionBar.setTitle(getString(isTelezhkaHidden() ? R.string.TelezhkaHiddenTitle : R.string.ArchivedChats));
             } else if (communityId != 0) {
                 actionBar.setTitle(DialogObject.getName(community));
                 actionBar.setAdditionalTextLeft(dp(28));
@@ -3543,6 +3551,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 ssb.setSpan(new android.text.style.RelativeSizeSpan(0.82f), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 actionBar.setTitle(ssb, statusDrawable);
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
+                // Telezhka: holding the header opens the hidden chats (no visible button for them)
+                actionBar.setOnLongClickListener(v -> {
+                    if (actionBar.isActionModeShowed() || actionBar.isSearchFieldVisible()) {
+                        return false;
+                    }
+                    v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+                    telezhkaOpenHidden();
+                    return true;
+                });
             }
             if (folderId == 0) {
                 actionBar.setSupportsHolidayImage(true);
@@ -4035,6 +4052,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         undoView.showWithAction(did, UndoView.ACTION_REMOVED_FROM_FOLDER, neverShow.size(), filter, null, null);
                     }
                     hideActionMode(false);
+                } else if (id == telezhka_hide_item) {
+                    telezhkaHideSelected();
                 } else if (id == pin || id == read || id == delete || id == clear || id == mute || id == archive || id == block || id == archive2 || id == pin2) {
                     performSelectedDialogsAction(selectedDialogs, id, true, false);
                 }
@@ -6777,6 +6796,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         readItem = otherItem.addSubItem(read, R.drawable.msg_markread, LocaleController.getString(R.string.MarkAsRead));
         clearItem = otherItem.addSubItem(clear, R.drawable.msg_clear, LocaleController.getString(R.string.ClearHistory));
         blockItem = otherItem.addSubItem(block, R.drawable.msg_block, LocaleController.getString(R.string.BlockUser));
+        telezhkaHideItem = otherItem.addSubItem(telezhka_hide_item, isTelezhkaHidden() ? R.drawable.menu_unlock : R.drawable.menu_hide_from_profile, getString(isTelezhkaHidden() ? R.string.TelezhkaUnhideChat : R.string.TelezhkaHideChat));
 
         muteItem.setOnLongClickListener(e -> {
             performSelectedDialogsAction(selectedDialogs, mute, true, true);
@@ -7044,10 +7064,82 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    private boolean isTelezhkaHidden() {
+        return folderId == TelezhkaHiddenChats.FOLDER_ID;
+    }
+
+    private void telezhkaOpenHidden() {
+        if (!TelezhkaHiddenChats.hasPin() || !TelezhkaHiddenChats.hasHidden(currentAccount) && !TelezhkaHiddenChats.isResetPending()) {
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.info, getString(R.string.TelezhkaHiddenNone)).show();
+            return;
+        }
+        presentFragment(new TelezhkaPinActivity(TelezhkaPinActivity.MODE_ENTER, fragment -> {
+            Bundle args = new Bundle();
+            args.putInt("folderId", TelezhkaHiddenChats.FOLDER_ID);
+            fragment.presentFragment(new DialogsActivity(args), true);
+        }));
+    }
+
+    private void telezhkaHideSelected() {
+        final ArrayList<Long> ids = new ArrayList<>(selectedDialogs);
+        hideActionMode(false);
+        if (ids.isEmpty()) {
+            return;
+        }
+        if (isTelezhkaHidden()) {
+            TelezhkaHiddenChats.setHidden(currentAccount, ids, false);
+            if (!TelezhkaHiddenChats.hasHidden(currentAccount)) {
+                finishFragment();
+            } else {
+                BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, getString(R.string.TelezhkaUnhiddenDone)).show();
+            }
+            return;
+        }
+        final Runnable hide = () -> {
+            TelezhkaHiddenChats.setHidden(currentAccount, ids, true);
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, getString(R.string.TelezhkaHiddenDone)).show();
+        };
+        if (TelezhkaHiddenChats.hasPin()) {
+            hide.run();
+            return;
+        }
+        // First time: say plainly what hiding does and does not do, then make a PIN
+        TelezhkaPopup popup = new TelezhkaPopup(getParentActivity());
+        popup.setIcon(R.drawable.menu_devices)
+                .setTitleText(getString(R.string.TelezhkaHideWarnTitle))
+                .addNumberedItem(getString(R.string.TelezhkaHideWarn1))
+                .addNumberedItem(getString(R.string.TelezhkaHideWarn2))
+                .addNumberedItem(getString(R.string.TelezhkaHideWarn3))
+                .setMainButton(getString(R.string.TelezhkaHideWarnButton), v -> {
+                    popup.dismiss();
+                    TelezhkaHiddenChats.setWarned();
+                    presentFragment(new TelezhkaPinActivity(TelezhkaPinActivity.MODE_CREATE, fragment -> {
+                        fragment.finishFragment();
+                        AndroidUtilities.runOnUIThread(hide, 350);
+                    }));
+                })
+                .setSecondaryButton(getString(R.string.Cancel), v -> popup.dismiss());
+        showDialog(popup);
+    }
+
     @Override
     public void onResume() {
         super.onResume();
         TelezhkaPingMonitor.start(pingListener, 15000);
+        if (isTelezhkaHidden()) {
+            if (TelezhkaHiddenChats.pausedSince(telezhkaOpenedAt)) {
+                // the app went to background: hidden chats lock again
+                AndroidUtilities.runOnUIThread(this::finishFragment);
+            } else if (!telezhkaNoticeShown) {
+                telezhkaNoticeShown = true;
+                AndroidUtilities.runOnUIThread(() -> BulletinFactory.of(this).createSimpleBulletin(R.raw.info, getString(R.string.TelezhkaHiddenNotice)).show(), 450);
+            }
+        } else if (folderId == 0 && communityId == 0 && !onlySelect && initialDialogsType == DIALOGS_TYPE_DEFAULT) {
+            if (TelezhkaHiddenChats.applyResetIfDue()) {
+                AndroidUtilities.runOnUIThread(() -> BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, getString(R.string.TelezhkaPinResetDone)).show(), 450);
+            }
+            TelezhkaUpdater.check(this);
+        }
         if (dialogStoriesCell != null) {
             dialogStoriesCell.onResume();
         }
@@ -9955,6 +10047,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             } else {
                 blockItem.setVisibility(View.VISIBLE);
             }
+        }
+        if (telezhkaHideItem != null) {
+            telezhkaHideItem.setVisibility(onlySelect || communityId != 0 ? View.GONE : View.VISIBLE);
         }
         if (removeFromFolderItem != null) {
             boolean cantRemoveFromFolder = filterTabsView == null || filterTabsView.getVisibility() != View.VISIBLE || filterTabsView.currentTabIsDefault();

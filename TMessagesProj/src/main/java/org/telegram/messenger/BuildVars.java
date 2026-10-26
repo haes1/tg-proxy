@@ -32,11 +32,14 @@ public class BuildVars {
     // JSON lists for ProxyPickerActivity: [{"server":"1.2.3.4","port":443,"secret":"ee..."}]
     // Tried in order until one gives proxies: the address set in the app (Подключение → Источник списка),
     // then PROXY_LIST_URL (proxies.json in the GitHub repo), then the mirrors.
-    public static String PROXY_LIST_URL = "https://raw.githubusercontent.com/haes1/tg-proxy/main/proxies.json";
+    public static String PROXY_LIST_URL = "https://raw.githubusercontent.com/telesga/tg-proxy/main/proxies.json";
+    // Telezhka updates come from this repo's releases; TELEZHKA_BUILD is set to the Actions run number by the workflow
+    public static String GITHUB_REPO = "telesga/tg-proxy";
+    public static int TELEZHKA_BUILD = 0;
     // Music bot behind the "Музыка" screen (see app_api.py in the bot)
     public static String MUSIC_BOT_USERNAME = "naidi_trek_bot";
     public static String[] PROXY_LIST_MIRRORS = {
-            "https://cdn.jsdelivr.net/gh/haes1/tg-proxy@main/proxies.json"
+            "https://cdn.jsdelivr.net/gh/telesga/tg-proxy@main/proxies.json"
     };
 
     // SafetyNet key for Google Identity SDK, set it to empty to disable

@@ -110,6 +110,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.ContactsLoadingObserver;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.TelezhkaHiddenChats;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FingerprintController;
@@ -2907,12 +2908,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     open_new_dialog = 1;
                 } else if (intent.getAction().startsWith("com.tmessages.openchat")) {
 //                    Integer chatIdInt = intent.getIntExtra("chatId", 0);
-                    long chatId = intent.getLongExtra("chatId", 0);
+                    // Telezhka: a hidden chat opens only through its PIN, never straight from a notification
+                    long chatId = TelezhkaHiddenChats.isHidden(intentAccount[0], -intent.getLongExtra("chatId", 0)) ? 0 : intent.getLongExtra("chatId", 0);
 //                    Integer userIdInt = intent.getIntExtra("userId", 0);
                     long[] storyDialogIds = intent.getLongArrayExtra("storyDialogIds");
                     int storyId = intent.getIntExtra("storyId", -1);
-                    long userId = intent.getLongExtra("userId", 0);
-                    int encId = intent.getIntExtra("encId", 0);
+                    long userId = TelezhkaHiddenChats.isHidden(intentAccount[0], intent.getLongExtra("userId", 0)) ? 0 : intent.getLongExtra("userId", 0);
+                    int encId = intent.getIntExtra("encId", 0) != 0 && TelezhkaHiddenChats.isHidden(intentAccount[0], DialogObject.makeEncryptedDialogId(intent.getIntExtra("encId", 0))) ? 0 : intent.getIntExtra("encId", 0);
                     int widgetId = intent.getIntExtra("appWidgetId", 0);
                     long topicId = intent.getLongExtra("topicId", 0);
                     final String oauth_url = intent.getStringExtra("oauth_url");
@@ -6855,6 +6857,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     protected void onPause() {
         super.onPause();
         isResumed = false;
+        TelezhkaHiddenChats.onAppPaused();
         pipActivityHandler.onPause();
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 4096);
         ApplicationLoader.mainInterfacePaused = true;

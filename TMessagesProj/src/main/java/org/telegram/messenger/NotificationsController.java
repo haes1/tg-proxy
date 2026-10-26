@@ -1853,7 +1853,7 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     public String getShortStringForMessage(MessageObject messageObject, String[] userName, boolean[] preview) {
-        if (AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter) {
+        if (AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter || TelezhkaHiddenChats.isHidden(currentAccount, messageObject.getDialogId())) {
             return LocaleController.getString(R.string.NotificationHiddenMessage);
         }
         long dialogId = messageObject.messageOwner.dialog_id;
@@ -2541,7 +2541,7 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     private String getStringForMessage(MessageObject messageObject, boolean shortMessage, boolean[] text, boolean[] preview) {
-        if (AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter) {
+        if (AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter || TelezhkaHiddenChats.isHidden(currentAccount, messageObject.getDialogId())) {
             return LocaleController.getString(R.string.YouHaveNewMessage);
         }
         if (messageObject.isStoryPush || messageObject.isStoryMentionPush) {
@@ -4301,7 +4301,7 @@ public class NotificationsController extends BaseController implements Notificat
             } else {
                 chatName = UserObject.getUserName(user);
             }
-            boolean passcode = AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter;
+            boolean passcode = AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter || TelezhkaHiddenChats.isHidden(currentAccount, dialog_id);
             final boolean allowSummary = !"samsung".equalsIgnoreCase(Build.MANUFACTURER);
             if (DialogObject.isEncryptedDialog(dialog_id) || allowSummary && pushDialogs.size() > 1 || passcode) {
                 if (passcode) {
@@ -4615,7 +4615,7 @@ public class NotificationsController extends BaseController implements Notificat
                         intent.putExtra("userId", userId);
                     }
                 }
-                if (AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter) {
+                if (AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter || TelezhkaHiddenChats.isHidden(currentAccount, dialog_id)) {
                     photoPath = null;
                 } else {
                     if (pushDialogs.size() == 1 && Build.VERSION.SDK_INT < 28) {
@@ -4968,9 +4968,9 @@ public class NotificationsController extends BaseController implements Notificat
         }
 
         long selfUserId = getUserConfig().getClientUserId();
-        boolean waitingForPasscode = AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter;
+        boolean waitingForPasscodeAll = AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter;
         boolean passcode = SharedConfig.passcodeHash.length() > 0;
-        FileLog.d("showExtraNotifications: passcode="+passcode+" waitingForPasscode=" + waitingForPasscode + " selfUserId=" + selfUserId + " useSummaryNotification=" + useSummaryNotification);
+        FileLog.d("showExtraNotifications: passcode="+passcode+" waitingForPasscode=" + waitingForPasscodeAll + " selfUserId=" + selfUserId + " useSummaryNotification=" + useSummaryNotification);
 
         int maxCount = 7;
         LongSparseArray<Person> personCache = new LongSparseArray<>();
@@ -5004,6 +5004,9 @@ public class NotificationsController extends BaseController implements Notificat
                 maxId = messageObjects.get(0).getId();
                 lastMessageObject = messageObjects.get(0);
             }
+
+            // Telezhka: hidden chats notify like a locked app, without name, avatar or text
+            final boolean waitingForPasscode = waitingForPasscodeAll || TelezhkaHiddenChats.isHidden(currentAccount, dialogId);
 
             Integer internalId = oldIdsWear.get(dialogKey.dialogId);
             if (dialogKey.story) {

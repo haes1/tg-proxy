@@ -69,7 +69,8 @@ jobs:
             URL_ESCAPED=$(printf '%s' "$PROXY_LIST_URL" | sed 's/[&|]/\\&/g')
             sed -i -E "s|(public static String PROXY_LIST_URL = )\"[^\"]*\";|\1\"$URL_ESCAPED\";|" "$FILE"
           fi
-          grep -n "APP_ID =\|PROXY_LIST_URL =" "$FILE"
+          sed -i -E "s/(public static int TELEZHKA_BUILD = )[0-9]+;/\1${{ github.run_number }};/" "$FILE"
+          grep -n "APP_ID =\|PROXY_LIST_URL =\|TELEZHKA_BUILD =" "$FILE"
 
       - name: Use own signing key
         env:
@@ -106,6 +107,16 @@ jobs:
           cp "$(find TMessagesProj_App/build/outputs/apk -name '*.apk' | head -n 1)" out/Telezhka-${{ github.run_number }}.apk
           ls -la out
 
+      - name: Release notes
+        # "- " lines of the commit message become the list in the in-app update popup
+        run: |
+          {
+            echo "APK для установки на Android. Скачайте файл .apk ниже."
+            echo
+            git log -1 --format=%B | grep -E '^- ' | head -n 4 || true
+          } > out/notes.md
+          cat out/notes.md
+
       - uses: actions/upload-artifact@v4
         with:
           name: Telezhka-apk
@@ -116,5 +127,5 @@ jobs:
         with:
           tag_name: build-${{ github.run_number }}
           name: Сборка ${{ github.run_number }}
-          body: APK для установки на Android. Скачайте файл .apk ниже.
+          body_path: out/notes.md
           files: out/*.apk
