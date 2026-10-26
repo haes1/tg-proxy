@@ -1611,6 +1611,9 @@ public class MessagesController extends BaseController implements NotificationCe
         promoDialogId = mainPreferences.getLong("proxy_dialog", 0);
         nextPromoInfoCheckTime = mainPreferences.getInt("nextPromoInfoCheckTime", 0);
         promoDialogType = mainPreferences.getInt("promo_dialog_type", 0);
+        if (promoDialogType == PROMO_TYPE_PROXY) {
+            promoDialogId = 0;  // Telezhka: never show the proxy sponsor channel
+        }
         promoPsaMessage = mainPreferences.getString("promo_psa_message", null);
         promoPsaType = mainPreferences.getString("promo_psa_type", null);
         proxyDialogAddress = mainPreferences.getString("proxyDialogAddress", null);
@@ -10883,6 +10886,10 @@ public class MessagesController extends BaseController implements NotificationCe
             if (response instanceof TLRPC.TL_help_promoDataEmpty) {
                 TLRPC.TL_help_promoDataEmpty res = (TLRPC.TL_help_promoDataEmpty) response;
                 nextPromoInfoCheckTime = res.expires;
+                noDialog = true;
+            } else if (response instanceof TLRPC.TL_help_promoData && ((TLRPC.TL_help_promoData) response).proxy) {
+                // Telezhka: hide the channel that the proxy owner promotes ("Спонсор прокси")
+                nextPromoInfoCheckTime = ((TLRPC.TL_help_promoData) response).expires;
                 noDialog = true;
             } else if (response instanceof TLRPC.TL_help_promoData) {
                 TLRPC.TL_help_promoData res = (TLRPC.TL_help_promoData) response;
