@@ -1,6 +1,8 @@
 [
-  {"server": "mt.anton-and-alyona.click", "port": 2222, "secret": "ee3404630470c2a08cdaff09293f73069d6d742e616e746f6e2d616e642d616c796f6e612e636c69636b"},
+  {"server": "edge.turboass.live", "port": 443, "secret": "ee51116f4018a2b3dfc9bda286c52afe9f656467652e747572626f6173732e6c697665"},
   {"server": "pub.ultra-fast.cc", "port": 443, "secret": "ee68a7c4e0b9d30660f8b4d35bb3b8e4347075622e756c7472612d666173742e6363"},
+  {"server": "surf.suslik-cloud.homes", "port": 443, "secret": "eed7f61466f824eafe116a533553e01bca737572662e7375736c696b2d636c6f75642e686f6d6573"},
+  {"server": "mt.anton-and-alyona.click", "port": 2222, "secret": "ee3404630470c2a08cdaff09293f73069d6d742e616e746f6e2d616e642d616c796f6e612e636c69636b"},
   {"server": "redflag.yazaebalsyadelatproxy.uk", "port": 443, "secret": "ee69e899d89ec68e220ca177557322b27f726564666c61672e79617a616562616c73796164656c617470726f78792e6363"},
   {"server": "redflag.yazaebalsyadelatproxy.co.uk", "port": 443, "secret": "ee69e899d89ec68e220ca177557322b27f726564666c61672e79617a616562616c73796164656c617470726f78792e6363"},
   {"server": "shared.ddproxy.xyz", "port": 443, "secret": "eedddddddddddddddddddddddddddddddd6d2e6265626f6f2e7275"},
@@ -12,7 +14,6 @@
   {"server": "t5.nevcodeframe.com", "port": 443, "secret": "ee4e7e658f96af22ada977fa3e2e472e6274352e6e6576636f64656672616d652e636f6d"},
   {"server": "t6.nevcodeframe.com", "port": 443, "secret": "ee0e4d933242164450da8a7e6b469b629774362e6e6576636f64656672616d652e636f6d"},
   {"server": "193.23.221.174", "port": 2222, "secret": "ddf8a79ccba519fb1c435b43d3d3ddd489"},
-  {"server": "surf.suslik-cloud.homes", "port": 443, "secret": "eed7f61466f824eafe116a533553e01bca737572662e7375736c696b2d636c6f75642e686f6d6573"},
   {"server": "pub.ultra-fast.cc", "port": 443, "secret": "eedc11b820c9d7ee0cac5976e33ca2808f7075622e756c7472612d666173742e6363"},
   {"server": "sun.lanternmoss.top", "port": 443, "secret": "ee0e2327b9decafd82d7ea2050f293458d73756e2e6c616e7465726e6d6f73732e746f70"},
   {"server": "sky.pebblewisp.xyz", "port": 443, "secret": "ee0e2327b9decafd82d7ea2050f293458d736b792e706562626c65776973702e78797a"},
@@ -34,6 +35,5 @@
   {"server": "sun.lanternmoss.top", "port": 443, "secret": "ee0e2327b9decafd82d7ea2050f293458d6c69746536342e73697465"},
   {"server": "sky.pebblewisp.xyz", "port": 443, "secret": "ee0e2327b9decafd82d7ea2050f293458d6c69746536342e73697465"},
   {"server": "pub.ultra-fast.cc", "port": 443, "secret": "eecad23b6df92986eb1f0f72450c7f3a7a7075622e756c7472612d666173742e6363"},
-  {"server": "pub.ultra-fast.cc", "port": 443, "secret": "eedebdc8d4bf59e1be1fac8898c34f11707075622e756c7472612d666173742e6363"},
-  {"server": "edge.turboass.live", "port": 443, "secret": "ee51116f4018a2b3dfc9bda286c52afe9f656467652e747572626f6173732e6c697665"}
+  {"server": "pub.ultra-fast.cc", "port": 443, "secret": "eedebdc8d4bf59e1be1fac8898c34f11707075622e756c7472612d666173742e6363"}
 ]
