@@ -301,6 +301,10 @@ public class TelezhkaMusic {
             currentObject = playlist.get(0);
         }
         if (currentObject != null) {
+            if (SharedConfig.playOrderReversed) {
+                // "Reverse order" from Telegram's player would play our list backwards
+                MediaController.getInstance().setPlaybackOrderType(SharedConfig.shuffleMusic ? 2 : 0);
+            }
             // loadMusic = false: do not mix in music from Saved Messages
             MediaController.getInstance().setPlaylist(playlist, currentObject, 0, false, null);
         }

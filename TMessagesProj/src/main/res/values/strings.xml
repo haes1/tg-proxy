@@ -11702,4 +11702,6 @@
     <string name="TelezhkaMusicShuffle">Перемешать</string>
     <string name="TelezhkaMusicPreparing">Готовим трек…</string>
     <string name="TelezhkaMusicPrepareFailed">Не получилось загрузить трек. Попробуйте другой вариант.</string>
+    <string name="TelezhkaMusicAllMine">Все мои треки</string>
+    <string name="TelezhkaMusicNowPlaying">Сейчас играет</string>
 </resources>
