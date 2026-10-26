@@ -563,6 +563,20 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         setTitle(value, null);
     }
 
+    // Telezhka: change only the drawable after the title, also the one restored after "Connecting…"
+    public void setTitleRightDrawable(Drawable rightDrawable) {
+        if (titleTextView[0] != null && attached && lastRightDrawable instanceof AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable && lastRightDrawable != rightDrawable) {
+            ((AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) lastRightDrawable).setParentView(null);
+        }
+        lastRightDrawable = rightDrawable;
+        if (titleTextView[0] != null && !titleOverlayShown) {
+            titleTextView[0].setRightDrawable(rightDrawable);
+            if (attached && rightDrawable instanceof AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) {
+                ((AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) rightDrawable).setParentView(titleTextView[0]);
+            }
+        }
+    }
+
     public void setTitle(CharSequence value, Drawable rightDrawable) {
         if (value != null && titleTextView[0] == null) {
             createTitleTextView(0);

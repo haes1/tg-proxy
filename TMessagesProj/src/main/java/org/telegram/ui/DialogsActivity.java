@@ -3074,6 +3074,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             actionBar.setRightDrawableOnClick(null);
         }
         statusDrawable.setColor(getThemedColor(Theme.key_profile_verifiedBackground));
+        // Telezhka: the empty status slot still takes width next to the title and cut "тележка" to "теле…"
+        // once the search icon appears; keep the slot only when there is a status to show
+        boolean hasStatus = emojiStatusId != null || user != null && MessagesController.getInstance(currentAccount).isPremiumUser(user);
+        actionBar.setTitleRightDrawable(hasStatus ? statusDrawable : null);
         if (animatedStatusView != null) {
             animatedStatusView.setColor(getThemedColor(Theme.key_profile_verifiedBackground));
         }
