@@ -191,6 +191,7 @@ import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.GroupCallPip;
 import org.telegram.ui.Components.JoinGroupAlert;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.TelezhkaFirstLaunchView;
 import org.telegram.ui.Components.TelezhkaSplashView;
 import org.telegram.ui.Components.PasscodeView;
 import org.telegram.ui.Components.PasscodeViewDialog;
@@ -463,7 +464,11 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         frameLayout.setClipChildren(false);
         setContentView(frameLayout);
         if (savedInstanceState == null) {
-            TelezhkaSplashView.show(frameLayout);
+            if (TelezhkaFirstLaunchView.shouldShow(this)) {
+                TelezhkaFirstLaunchView.show(frameLayout);  // "Привет", once after install
+            } else {
+                TelezhkaSplashView.show(frameLayout);
+            }
         }
         rootAnimatedInsetsListener = new WindowAnimatedInsetsProvider(frameLayout);
         pipActivityController.addPipListener(new IPipActivityListener() {
