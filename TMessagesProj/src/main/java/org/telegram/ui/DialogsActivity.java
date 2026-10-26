@@ -513,6 +513,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private ProxyDrawable proxyDrawable;
     private ActionBarMenuSubItem proxyMenuSubItem;
     private static final int telezhka_ping_item = 1001;
+    private static final int telezhka_music_item = 1002;
     private ActionBarMenuItem pingPillItem;
     private ProxyPingPillDrawable pingPill;
     private final TelezhkaPingMonitor.Listener pingListener = ping -> updatePingPill();
@@ -3273,6 +3274,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             proxyMenuSubItem.setTextAndIcon(getString(R.string.MenuProxyTitle), 0, proxyDrawable);
             proxyMenuSubItem.setContentDescription(getString(R.string.ProxySettings));
 
+            menu.addItem(telezhka_music_item, R.drawable.telezhka_ic_music).setContentDescription(getString(R.string.TelezhkaMusicTitle));
             pingPill = new ProxyPingPillDrawable();
             pingPillItem = menu.addItemWithWidth(telezhka_ping_item, pingPill, dp(104), getString(R.string.TelezhkaConnectionTitle));
 
@@ -3916,6 +3918,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     ((LaunchActivity) getParentActivity()).showPasscodeActivity(false, true, position[0] + passcodeItem.getMeasuredWidth() / 2, position[1] + passcodeItem.getMeasuredHeight() / 2, () -> passcodeItem.setAlpha(1.0f), () -> passcodeItem.setAlpha(0.0f));
                     getNotificationsController().showNotifications();
                     checkUi_itemPasscodeVisibility();
+                } else if (id == telezhka_music_item) {
+                    presentFragment(new MusicActivity());
                 } else if (id == telezhka_ping_item) {
                     presentFragment(new ProxyStatusActivity());
                 } else if (id == 3) {

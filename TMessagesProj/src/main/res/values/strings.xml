@@ -11688,4 +11688,18 @@
     <string name="TelezhkaListSourceInfo">Адрес файла со списком прокси в формате JSON. Оставьте пустым, чтобы брать список из репозитория на GitHub.</string>
     <string name="TelezhkaListSourceReset">По умолчанию</string>
     <string name="TelezhkaListSourceBad">Нужен адрес, который начинается с https://</string>
+    <string name="TelezhkaMusicTitle">Музыка</string>
+    <string name="TelezhkaMusicSearchHint">Песня или исполнитель</string>
+    <string name="TelezhkaMusicLoading">Загружаем…</string>
+    <string name="TelezhkaMusicSearching">Ищем…</string>
+    <string name="TelezhkaMusicNothing">Ничего не нашли. Попробуйте написать по-другому.</string>
+    <string name="TelezhkaMusicError">Музыкальный бот не отвечает. Проверьте подключение и попробуйте ещё раз.</string>
+    <string name="TelezhkaMusicMine">Мои песни</string>
+    <string name="TelezhkaMusicMineEmpty">Нажмите на сердечко у трека, и он появится здесь.</string>
+    <string name="TelezhkaMusicTop">Популярное</string>
+    <string name="TelezhkaMusicResults">Найдено</string>
+    <string name="TelezhkaMusicPlayAll">Слушать</string>
+    <string name="TelezhkaMusicShuffle">Перемешать</string>
+    <string name="TelezhkaMusicPreparing">Готовим трек…</string>
+    <string name="TelezhkaMusicPrepareFailed">Не получилось загрузить трек. Попробуйте другой вариант.</string>
 </resources>

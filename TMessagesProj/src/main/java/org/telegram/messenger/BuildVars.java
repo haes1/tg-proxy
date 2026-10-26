@@ -33,6 +33,8 @@ public class BuildVars {
     // Tried in order until one gives proxies: the address set in the app (Подключение → Источник списка),
     // then PROXY_LIST_URL (proxies.json in the GitHub repo), then the mirrors.
     public static String PROXY_LIST_URL = "https://raw.githubusercontent.com/haes1/tg-proxy/main/proxies.json";
+    // Music bot behind the "Музыка" screen (see app_api.py in the bot)
+    public static String MUSIC_BOT_USERNAME = "naidi_trek_bot";
     public static String[] PROXY_LIST_MIRRORS = {
             "https://cdn.jsdelivr.net/gh/haes1/tg-proxy@main/proxies.json"
     };
