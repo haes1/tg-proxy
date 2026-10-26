@@ -4442,6 +4442,65 @@ public class LocaleController {
 
     @Nullable
     private String getStringV2(String key, @StringRes int stringRes, String fallback) {
+        return rebrand(getStringV2Raw(key, stringRes, fallback));
+    }
+
+    // Telezhka: interface texts say "Тележка" instead of "Telegram" (with Russian cases).
+    // Names of Telegram's own products and services stay as they are.
+    private static final java.util.regex.Pattern TELEGRAM_WORD = java.util.regex.Pattern.compile(
+            "(?<![@./\\w])(?:((?iu:в|из|для|о|об|с|к|у|без|через|до|от))\\s+)?Telegram(?!\\s+(?:Premium|Stars|Business|Gateway|Desktop|Web|X\\b|Passport|Gift|Ads|Wallet|Mini|Bot|API|FAQ|Features|Support))(?![\\w.])");
+    // Telegram's own support and team stay "Telegram"
+    private static final java.util.regex.Pattern TELEGRAM_SERVICE = java.util.regex.Pattern.compile("(?iu)(поддержк\\p{L}*|команд\\p{L}*|support|team)\\s+$");
+    private static final java.util.regex.Pattern TOWARDS = java.util.regex.Pattern.compile("(?iu)(пожаловать|войти|вход|перейти|переходите|вернуться|приглашает|приглашаем|добавлен\\p{L}*)\\s+$");
+
+    public static String rebrand(String value) {
+        if (value == null || !value.contains("Telegram")) {
+            return value;
+        }
+        boolean russian = false;
+        for (int i = 0; i < value.length() && !russian; i++) {
+            char c = value.charAt(i);
+            russian = c >= 'А' && c <= 'я' || c == 'ё' || c == 'Ё';
+        }
+        java.util.regex.Matcher m = TELEGRAM_WORD.matcher(value);
+        StringBuffer out = new StringBuffer();
+        while (m.find()) {
+            String prep = m.group(1);
+            String before = value.substring(0, m.start());
+            if (TELEGRAM_SERVICE.matcher(before).find()) {
+                m.appendReplacement(out, java.util.regex.Matcher.quoteReplacement(m.group()));
+                continue;
+            }
+            String replacement;
+            if (!russian) {
+                replacement = (prep != null ? prep + " " : "") + "Telezhka";
+            } else if (prep == null) {
+                replacement = "Тележка";
+            } else {
+                switch (prep.toLowerCase()) {
+                    case "в":
+                        replacement = prep + (TOWARDS.matcher(before).find() ? " Тележку" : " Тележке");
+                        break;
+                    case "о": case "об": case "к":
+                        replacement = prep + " Тележке";
+                        break;
+                    case "с":
+                        replacement = prep + " Тележкой";
+                        break;
+                    case "через":
+                        replacement = prep + " Тележку";
+                        break;
+                    default:
+                        replacement = prep + " Тележки";
+                }
+            }
+            m.appendReplacement(out, java.util.regex.Matcher.quoteReplacement(replacement));
+        }
+        m.appendTail(out);
+        return out.toString();
+    }
+
+    private String getStringV2Raw(String key, @StringRes int stringRes, String fallback) {
         final Context context = ApplicationLoader.applicationContext;
         String value;
 

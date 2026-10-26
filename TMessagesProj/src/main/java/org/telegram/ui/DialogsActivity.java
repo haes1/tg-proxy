@@ -3276,7 +3276,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             menu.addItem(telezhka_music_item, R.drawable.telezhka_ic_music).setContentDescription(getString(R.string.TelezhkaMusicTitle));
             pingPill = new ProxyPingPillDrawable();
-            pingPillItem = menu.addItemWithWidth(telezhka_ping_item, pingPill, dp(104), getString(R.string.TelezhkaConnectionTitle));
+            pingPillItem = menu.addItemWithWidth(telezhka_ping_item, pingPill, dp(92), getString(R.string.TelezhkaConnectionTitle));
 
             passcodeItem = menu.addItem(1, R.drawable.outline_header_lock_24);
             passcodeItem.setContentDescription(getString(R.string.AccDescrPasscodeLock));
@@ -3540,6 +3540,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         paint.setTypeface(AndroidUtilities.display());
                     }
                 }, 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                ssb.setSpan(new android.text.style.RelativeSizeSpan(0.82f), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 actionBar.setTitle(ssb, statusDrawable);
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
