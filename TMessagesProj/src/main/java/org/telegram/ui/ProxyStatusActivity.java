@@ -32,6 +32,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.TelezhkaPingMonitor;
+import org.telegram.messenger.TelezhkaProxyAutopilot;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
@@ -70,6 +71,7 @@ public class ProxyStatusActivity extends BaseFragment implements NotificationCen
     private TextView lastInfo;
     private LinearLayout lastCard;
     private TextView sourceValue;
+    private TextView autopilotStatus;
     private final TelezhkaPingMonitor.Listener pingListener = ping -> updateHero();
 
     @Override
@@ -200,6 +202,45 @@ public class ProxyStatusActivity extends BaseFragment implements NotificationCen
         again.setOnClickListener(v -> presentFragment(new ProxyPickerActivity(true)));
         layout.addView(again, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 54, 0, 18, 0, 0));
 
+        // Autopilot: keeps the list fresh, removes dead proxies and switches by itself
+        layout.addView(header(context, getString(R.string.TelezhkaAutopilotTitle)));
+        LinearLayout autoCard = card(context);
+        LinearLayout autoRow = new LinearLayout(context);
+        autoRow.setOrientation(LinearLayout.HORIZONTAL);
+        autoRow.setGravity(Gravity.CENTER_VERTICAL);
+        autoRow.setPadding(dp(16), dp(14), dp(16), dp(6));
+        LinearLayout autoTexts = new LinearLayout(context);
+        autoTexts.setOrientation(LinearLayout.VERTICAL);
+        TextView autoLabel = new TextView(context);
+        autoLabel.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        autoLabel.setTypeface(AndroidUtilities.bold());
+        autoLabel.setTextColor(TEXT);
+        autoLabel.setText(getString(R.string.TelezhkaAutopilotLabel));
+        autoTexts.addView(autoLabel);
+        TextView autoInfo = new TextView(context);
+        autoInfo.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        autoInfo.setTextColor(MUTE);
+        autoInfo.setText(getString(R.string.TelezhkaAutopilotInfo));
+        autoTexts.addView(autoInfo, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        autoRow.addView(autoTexts, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 12, 0));
+        org.telegram.ui.Components.Switch autoSwitch = new org.telegram.ui.Components.Switch(context);
+        autoSwitch.setChecked(TelezhkaProxyAutopilot.isEnabled(), false);
+        autoRow.addView(autoSwitch, LayoutHelper.createLinear(37, 40));
+        autoRow.setOnClickListener(v -> {
+            boolean now = !TelezhkaProxyAutopilot.isEnabled();
+            TelezhkaProxyAutopilot.setEnabled(now);
+            autoSwitch.setChecked(now, true);
+            updateAutopilot();
+        });
+        autoCard.addView(autoRow);
+        autopilotStatus = new TextView(context);
+        autopilotStatus.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        autopilotStatus.setTextColor(MUTE);
+        autopilotStatus.setPadding(dp(16), dp(4), dp(16), dp(14));
+        autoCard.addView(autopilotStatus);
+        layout.addView(autoCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        updateAutopilot();
+
         layout.addView(header(context, getString(R.string.TelezhkaListSourceTitle)));
         LinearLayout sourceCard = card(context);
         LinearLayout sourceRow = new LinearLayout(context);
@@ -247,6 +288,25 @@ public class ProxyStatusActivity extends BaseFragment implements NotificationCen
         return fragmentView;
     }
 
+    private void updateAutopilot() {
+        if (autopilotStatus == null) {
+            return;
+        }
+        if (!TelezhkaProxyAutopilot.isEnabled()) {
+            autopilotStatus.setText(getString(R.string.TelezhkaAutopilotOff));
+            return;
+        }
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        long last = preferences.getLong(TelezhkaProxyAutopilot.PREF_LAST_RUN, 0);
+        if (last == 0) {
+            autopilotStatus.setText(getString(R.string.TelezhkaAutopilotNever));
+            return;
+        }
+        int minutes = (int) Math.max(0, (System.currentTimeMillis() - last) / 60000);
+        autopilotStatus.setText(formatString(R.string.TelezhkaAutopilotStatus, minutes,
+                preferences.getInt(TelezhkaProxyAutopilot.PREF_ADDED, 0), preferences.getInt(TelezhkaProxyAutopilot.PREF_REMOVED, 0)));
+    }
+
     private void updateSource() {
         if (sourceValue != null) {
             sourceValue.setText(ProxyPickerActivity.getListSourceLabel());
@@ -280,6 +340,7 @@ public class ProxyStatusActivity extends BaseFragment implements NotificationCen
         if (fragmentView == null) {
             return;
         }
+        updateAutopilot();
         updateHero();
         updateLastPick();
         updateSpares();

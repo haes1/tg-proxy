@@ -557,7 +557,7 @@ public class ProxyPickerActivity extends BaseFragment {
         }
     }
 
-    private static String downloadList(String url) {
+    public static String downloadList(String url) {
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) new URL(url).openConnection();
@@ -589,7 +589,7 @@ public class ProxyPickerActivity extends BaseFragment {
         }
     }
 
-    private static ArrayList<ProxySettings> parseProxyList(String json) {
+    public static ArrayList<ProxySettings> parseProxyList(String json) {
         ArrayList<ProxySettings> result = new ArrayList<>();
         if (TextUtils.isEmpty(json)) {
             return result;
@@ -614,7 +614,7 @@ public class ProxyPickerActivity extends BaseFragment {
         return result;
     }
 
-    private static ArrayList<ProxySettings> loadFallbackList() {
+    public static ArrayList<ProxySettings> loadFallbackList() {
         ArrayList<ProxySettings> result = new ArrayList<>();
         HashSet<ProxySettings> seen = new HashSet<>();
         for (String[] entry : FALLBACK_PROXIES) {

@@ -11704,4 +11704,10 @@
     <string name="TelezhkaMusicPrepareFailed">Не получилось загрузить трек. Попробуйте другой вариант.</string>
     <string name="TelezhkaMusicAllMine">Все мои треки</string>
     <string name="TelezhkaMusicNowPlaying">Сейчас играет</string>
+    <string name="TelezhkaAutopilotTitle">Автопилот</string>
+    <string name="TelezhkaAutopilotLabel">Следить за прокси самой</string>
+    <string name="TelezhkaAutopilotInfo">Раз в полчаса обновляет список, убирает нерабочие и переключает на самый быстрый</string>
+    <string name="TelezhkaAutopilotOff">Выключен. Прокси меняются только вручную.</string>
+    <string name="TelezhkaAutopilotNever">Первая проверка будет через несколько секунд после запуска.</string>
+    <string name="TelezhkaAutopilotStatus">Проверено %1$d мин назад · новых %2$d · удалено нерабочих %3$d</string>
 </resources>
