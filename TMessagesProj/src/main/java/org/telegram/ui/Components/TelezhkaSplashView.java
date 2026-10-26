@@ -61,11 +61,12 @@ public class TelezhkaSplashView extends View {
         ringPaint.setColor(SIGNAL);
         ringPaint.setStyle(Paint.Style.STROKE);
         titlePaint.setColor(TEXT);
-        titlePaint.setTypeface(AndroidUtilities.bold());
+        titlePaint.setTypeface(AndroidUtilities.display());
         titlePaint.setTextSize(dp(32));
         titlePaint.setTextAlign(Paint.Align.CENTER);
         taglinePaint.setColor(MUTE);
         taglinePaint.setTextSize(dp(14));
+        taglinePaint.setTypeface(AndroidUtilities.regular());
         taglinePaint.setTextAlign(Paint.Align.CENTER);
 
         // Same shape as the launcher icon, in a 120x120 box

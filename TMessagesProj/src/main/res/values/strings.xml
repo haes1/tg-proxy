@@ -11664,4 +11664,21 @@
     <string name="TelezhkaIntroText3">Переписка шифруется так же, как в официальном клиенте. Прокси видят только ваш IP, но не сообщения.</string>
     <string name="TelezhkaIntroNext">Дальше</string>
     <string name="TelezhkaIntroStart">Начать</string>
+    <string name="TelezhkaConnectionTitle">Подключение</string>
+    <string name="TelezhkaConnectionLive">обновляется каждые 2 с</string>
+    <string name="TelezhkaConnectionLastPick">Последний подбор</string>
+    <string name="TelezhkaConnectionSpares">Запасные</string>
+    <string name="TelezhkaConnectionAllSettings">Все настройки прокси</string>
+    <string name="TelezhkaConnectionConnecting">Подключаемся…</string>
+    <string name="TelezhkaConnectionViaProxy">Подключено через прокси</string>
+    <string name="TelezhkaConnectionDirect">Подключено напрямую</string>
+    <string name="TelezhkaConnectionNoProxy">прокси не используется</string>
+    <string name="TelezhkaConnectionNoPick">Подбора ещё не было</string>
+    <string name="TelezhkaConnectionPickInfo">%1$d проверено · %2$d рабочих · %3$s</string>
+    <string name="TelezhkaConnectionNoSpares">Запасных пока нет. Нажмите «Подобрать заново».</string>
+    <string name="TelezhkaMs">мс</string>
+    <string name="TelezhkaPillConnecting">связь…</string>
+    <string name="TelezhkaPillDirect">напрямую</string>
+    <string name="TelezhkaPillProxy">прокси</string>
+    <string name="TelezhkaPillMs">%1$d мс</string>
 </resources>

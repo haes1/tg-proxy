@@ -125,6 +125,8 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.ui.Components.ProxyPingPillDrawable;
+import org.telegram.messenger.TelezhkaPingMonitor;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -510,6 +512,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private ActionBarMenuItem doneItem;
     private ProxyDrawable proxyDrawable;
     private ActionBarMenuSubItem proxyMenuSubItem;
+    private static final int telezhka_ping_item = 1001;
+    private ActionBarMenuItem pingPillItem;
+    private ProxyPingPillDrawable pingPill;
+    private final TelezhkaPingMonitor.Listener pingListener = ping -> updatePingPill();
     private HintView2 storyHint;
     private HintView2 storyPremiumHint;
     private boolean canShowStoryHint;
@@ -3267,6 +3273,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             proxyMenuSubItem.setTextAndIcon(getString(R.string.MenuProxyTitle), 0, proxyDrawable);
             proxyMenuSubItem.setContentDescription(getString(R.string.ProxySettings));
 
+            pingPill = new ProxyPingPillDrawable();
+            pingPillItem = menu.addItemWithWidth(telezhka_ping_item, pingPill, dp(104), getString(R.string.TelezhkaConnectionTitle));
+
             passcodeItem = menu.addItem(1, R.drawable.outline_header_lock_24);
             passcodeItem.setContentDescription(getString(R.string.AccDescrPasscodeLock));
 
@@ -3907,6 +3916,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     ((LaunchActivity) getParentActivity()).showPasscodeActivity(false, true, position[0] + passcodeItem.getMeasuredWidth() / 2, position[1] + passcodeItem.getMeasuredHeight() / 2, () -> passcodeItem.setAlpha(1.0f), () -> passcodeItem.setAlpha(0.0f));
                     getNotificationsController().showNotifications();
                     checkUi_itemPasscodeVisibility();
+                } else if (id == telezhka_ping_item) {
+                    presentFragment(new ProxyStatusActivity());
                 } else if (id == 3) {
                     showSearch(true, true, true);
                     fragmentSearchFieldWatcher.toggleSearch(true);
@@ -7020,6 +7031,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onResume() {
         super.onResume();
+        TelezhkaPingMonitor.start(pingListener, 15000);
         if (dialogStoriesCell != null) {
             dialogStoriesCell.onResume();
         }
@@ -7238,6 +7250,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onPause() {
         super.onPause();
+        TelezhkaPingMonitor.stop(pingListener);
         if (storiesBulletin != null) {
             storiesBulletin.hide();
             storiesBulletin = null;
@@ -10242,6 +10255,22 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final boolean connected = currentConnectionState == ConnectionsManager.ConnectionStateConnected || currentConnectionState == ConnectionsManager.ConnectionStateUpdating;
         proxyMenuSubItem.setSubtext(getString(proxyEnabled ? (connected ? R.string.MenuProxyConnected : R.string.MenuProxyConnecting) : R.string.MenuProxyDisabled));
         proxyDrawable.setConnected(proxyEnabled, connected, animated);
+        updatePingPill();
+    }
+
+    private void updatePingPill() {
+        if (pingPill == null) {
+            return;
+        }
+        final boolean connected = currentConnectionState == ConnectionsManager.ConnectionStateConnected || currentConnectionState == ConnectionsManager.ConnectionStateUpdating;
+        if (!connected) {
+            pingPill.setState(ProxyPingPillDrawable.STATE_CONNECTING, getString(R.string.TelezhkaPillConnecting));
+        } else if (SharedConfig.isProxyEnabled()) {
+            long ping = TelezhkaPingMonitor.getLastPing();
+            pingPill.setState(ProxyPingPillDrawable.STATE_CONNECTED, ping > 0 ? LocaleController.formatString(R.string.TelezhkaPillMs, ping) : getString(R.string.TelezhkaPillProxy));
+        } else {
+            pingPill.setState(ProxyPingPillDrawable.STATE_CONNECTED, getString(R.string.TelezhkaPillDirect));
+        }
     }
 
     private AnimatorSet doneItemAnimator;

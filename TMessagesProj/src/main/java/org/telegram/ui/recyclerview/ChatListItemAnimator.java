@@ -21,6 +21,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -349,7 +350,9 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         if (!(chatMessageCell != null && chatMessageCell.getTransitionParams().ignoreAlpha)) {
             holder.itemView.setAlpha(1);
         }
+        boolean ownEnterTransition = false;
         if (activity != null && chatMessageCell != null && activity.animatingMessageObjects.contains(chatMessageCell.getMessageObject())) {
+            ownEnterTransition = true;
             activity.animatingMessageObjects.remove(chatMessageCell.getMessageObject());
             if (activity.getChatActivityEnterView().canShowMessageTransition()) {
                 if (chatMessageCell.getMessageObject().isVoice()) {
@@ -365,6 +368,10 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 }
                 activity.getChatActivityEnterView().startMessageTransition();
             }
+        }
+        if (!ownEnterTransition && chatMessageCell != null && shouldAnimateEnterFromBottom && chatMessageCell.getMessageObject() != null
+                && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW) {
+            startBubblePop(chatMessageCell);
         }
         animation.translationY(0).setDuration(getMoveDuration())
                 .setInterpolator(translationInterpolator)
@@ -394,6 +401,37 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                         }
                     }
                 }).start();
+    }
+
+    // Telezhka: new messages "inflate" from the bubble's bottom corner with a little spring
+    private void startBubblePop(ChatMessageCell cell) {
+        final boolean out = cell.getMessageObject().isOutOwner();
+        final boolean animateAlpha = !cell.getTransitionParams().ignoreAlpha;
+        cell.setPivotX(out ? cell.getWidth() - AndroidUtilities.dp(12) : AndroidUtilities.dp(60));
+        cell.setPivotY(cell.getHeight());
+        ValueAnimator pop = ValueAnimator.ofFloat(0f, 1f);
+        pop.setDuration(420);
+        pop.setInterpolator(new android.view.animation.OvershootInterpolator(1.6f));
+        pop.addUpdateListener(a -> {
+            float v = (float) a.getAnimatedValue();
+            float scale = 0.5f + 0.5f * v;
+            cell.setScaleX(scale);
+            cell.setScaleY(scale);
+            if (animateAlpha) {
+                cell.setAlpha(Math.min(1f, a.getAnimatedFraction() * 2.5f));
+            }
+        });
+        pop.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                cell.setScaleX(1f);
+                cell.setScaleY(1f);
+                if (animateAlpha) {
+                    cell.setAlpha(1f);
+                }
+            }
+        });
+        pop.start();
     }
 
     @Override

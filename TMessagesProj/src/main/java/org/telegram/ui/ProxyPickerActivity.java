@@ -32,6 +32,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.TelezhkaPingMonitor;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -196,8 +197,8 @@ public class ProxyPickerActivity extends BaseFragment {
         layout.addView(pill, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT));
 
         titleTextView = new TextView(context);
-        titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 28);
-        titleTextView.setTypeface(AndroidUtilities.bold());
+        titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
+        titleTextView.setTypeface(AndroidUtilities.display());
         titleTextView.setTextColor(TEXT);
         titleTextView.setText(getString(R.string.ProxyPickerHeadline));
         layout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 18, 0, 0));
@@ -372,6 +373,19 @@ public class ProxyPickerActivity extends BaseFragment {
         statusTextView.setText(status);
         titleTextView.setText(getString(R.string.ProxyPickerHeadline));
         setPill(getString(R.string.ProxyPickerPillIdle), MUTE, false);
+        if (checkedCount > 0) {
+            saveLastPick();
+        }
+    }
+
+    // Read by ProxyStatusActivity ("last pick" card)
+    private void saveLastPick() {
+        MessagesController.getGlobalMainSettings().edit()
+                .putString("telezhka_last_pick", gridView.snapshot())
+                .putInt("telezhka_last_pick_checked", Math.max(checkedCount, candidates.size()))
+                .putInt("telezhka_last_pick_working", workingCount)
+                .putLong("telezhka_last_pick_time", System.currentTimeMillis())
+                .apply();
     }
 
     private void finishSuccess(ProxySettings settings, long ping, int spares) {
@@ -384,6 +398,7 @@ public class ProxyPickerActivity extends BaseFragment {
         statusTextView.setText(getString(R.string.ProxyPickerDoneInfo));
         setPill(getString(R.string.ProxyPickerPillDone), OK_COLOR, false);
         bestValue.setText(String.valueOf(ping));
+        saveLastPick();
         showResult(settings.getAddress() + " : " + settings.getPort(), formatString(R.string.ProxyPickerResultSub, ping, spares));
     }
 
@@ -728,6 +743,7 @@ public class ProxyPickerActivity extends BaseFragment {
         SharedConfig.currentProxy = info;
         ConnectionsManager.setProxySettings(true, info.settings);
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
+        TelezhkaPingMonitor.refresh();
     }
 
     private static void disableProxy() {

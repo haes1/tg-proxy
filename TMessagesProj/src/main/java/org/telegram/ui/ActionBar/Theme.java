@@ -7813,7 +7813,9 @@ public class Theme {
                 dialogs_nameEncryptedPaint[a] = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
                 dialogs_nameEncryptedPaint[a].setTypeface(AndroidUtilities.bold());
                 dialogs_messagePaint[a] = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+                dialogs_messagePaint[a].setTypeface(AndroidUtilities.regular());
                 dialogs_messagePrintingPaint[a] = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+                dialogs_messagePrintingPaint[a].setTypeface(AndroidUtilities.regular());
             }
             dialogs_searchNamePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             dialogs_searchNamePaint.setTypeface(AndroidUtilities.bold());
@@ -7822,6 +7824,7 @@ public class Theme {
             dialogs_messageNamePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             dialogs_messageNamePaint.setTypeface(AndroidUtilities.bold());
             dialogs_timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+            dialogs_timePaint.setTypeface(AndroidUtilities.regular());
             dialogs_timePaintBold = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             dialogs_timePaintBoldAccent = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             dialogs_archiveTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
@@ -7994,6 +7997,7 @@ public class Theme {
         synchronized (sync) {
             if (chat_msgTextPaint == null) {
                 chat_msgTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+                chat_msgTextPaint.setTypeface(AndroidUtilities.regular());
                 chat_msgGameTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
                 chat_msgTextPaintEmoji = new TextPaint[6];
                 chat_msgTextPaintOneEmoji = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -8006,6 +8010,7 @@ public class Theme {
                 chat_replyNamePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
                 chat_replyNamePaint.setTypeface(AndroidUtilities.bold());
                 chat_replyTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+                chat_replyTextPaint.setTypeface(AndroidUtilities.regular());
                 chat_quoteTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
                 chat_explanationTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
                 chat_titleLabelTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);

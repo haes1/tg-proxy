@@ -56,6 +56,29 @@ public class ProxyDotGridView extends View {
         return states.length;
     }
 
+    // Compact snapshot for the connection screen: one char per dot, '0' dead, '1' works, '2' best, '-' unchecked
+    public String snapshot() {
+        StringBuilder sb = new StringBuilder(states.length);
+        for (int state : states) {
+            sb.append(state == BEST ? '2' : state == OK ? '1' : state == BAD ? '0' : '-');
+        }
+        return sb.toString();
+    }
+
+    public void restore(String snapshot) {
+        setCount(snapshot.length());
+        for (int i = 0; i < snapshot.length(); i++) {
+            char c = snapshot.charAt(i);
+            states[i] = c == '2' ? BEST : c == '1' ? OK : c == '0' ? BAD : IDLE;
+        }
+        invalidate();
+    }
+
+    public void setColumns(int columns) {
+        this.columns = columns;
+        requestLayout();
+    }
+
     public void setState(int index, int state) {
         if (index < 0 || index >= states.length || states[index] == state) {
             return;

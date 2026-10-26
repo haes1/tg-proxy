@@ -292,6 +292,7 @@ public class ApplicationLoader extends Application {
 
         // AndroidUtilities must be initialized before FileLog
         final String helloWorld = AndroidUtilities.getHelloWorld();
+        AndroidUtilities.applyTelezhkaFonts();
 
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d(helloWorld);

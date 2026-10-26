@@ -254,6 +254,10 @@ public class AndroidUtilities {
     public final static String TYPEFACE_ROBOTO_MEDIUM_ITALIC = "fonts/rmediumitalic.ttf";
     public final static String TYPEFACE_ROBOTO_MONO = "fonts/rmono.ttf";
     public final static String TYPEFACE_MERRIWEATHER_BOLD = "fonts/mw_bold.ttf";
+    // Telezhka fonts (SIL Open Font License): Manrope for text, Unbounded for headlines
+    public final static String TYPEFACE_TELEZHKA_REGULAR = "fonts/manrope_regular.ttf";
+    public final static String TYPEFACE_TELEZHKA_BOLD = "fonts/manrope_bold.ttf";
+    public final static String TYPEFACE_TELEZHKA_DISPLAY = "fonts/unbounded_semibold.ttf";
 
     public static Typeface mediumTypeface;
     public static ThreadLocal<byte[]> readBufferLocal = new ThreadLocal<>();
@@ -264,10 +268,62 @@ public class AndroidUtilities {
             if (SharedConfig.useSystemBoldFont && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 mediumTypeface = Typeface.create(null, 500, false);
             } else {
-                mediumTypeface = getTypeface(TYPEFACE_ROBOTO_MEDIUM);
+                mediumTypeface = getTypeface(TYPEFACE_TELEZHKA_BOLD);
+                if (mediumTypeface == null) {
+                    mediumTypeface = getTypeface(TYPEFACE_ROBOTO_MEDIUM);
+                }
             }
         }
         return mediumTypeface;
+    }
+
+    public static Typeface regular() {
+        Typeface typeface = getTypeface(TYPEFACE_TELEZHKA_REGULAR);
+        return typeface != null ? typeface : Typeface.DEFAULT;
+    }
+
+    public static Typeface display() {
+        Typeface typeface = getTypeface(TYPEFACE_TELEZHKA_DISPLAY);
+        return typeface != null ? typeface : bold();
+    }
+
+    // Best effort: make Manrope the default for every view and paint that does not set its own typeface.
+    // Uses hidden Typeface internals; anything the platform refuses is skipped and the system font stays.
+    @SuppressWarnings("unchecked")
+    public static void applyTelezhkaFonts() {
+        Typeface regular = getTypeface(TYPEFACE_TELEZHKA_REGULAR);
+        Typeface boldFace = getTypeface(TYPEFACE_TELEZHKA_BOLD);
+        if (regular == null) {
+            return;
+        }
+        replaceTypefaceField("DEFAULT", regular);
+        replaceTypefaceField("SANS_SERIF", regular);
+        if (boldFace != null) {
+            replaceTypefaceField("DEFAULT_BOLD", boldFace);
+        }
+        try {
+            java.lang.reflect.Method setDefault = Typeface.class.getDeclaredMethod("setDefault", Typeface.class);
+            setDefault.setAccessible(true);
+            setDefault.invoke(null, regular);
+        } catch (Throwable ignore) {
+        }
+        try {
+            java.lang.reflect.Field field = Typeface.class.getDeclaredField("sSystemFontMap");
+            field.setAccessible(true);
+            java.util.Map<String, Typeface> map = new java.util.HashMap<>((java.util.Map<String, Typeface>) field.get(null));
+            map.put("sans-serif", regular);
+            field.set(null, map);
+        } catch (Throwable ignore) {
+        }
+    }
+
+    private static void replaceTypefaceField(String name, Typeface typeface) {
+        try {
+            java.lang.reflect.Field field = Typeface.class.getDeclaredField(name);
+            field.setAccessible(true);
+            field.set(null, typeface);
+        } catch (Throwable ignore) {
+        }
     }
 
     private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<>();

@@ -1,0 +1,460 @@
+/*
+ * This is the source code of Telegram for Android v. 7.x.x.
+ * It is licensed under GNU GPL v. 2 or later.
+ * You should have received a copy of the license in this archive (see LICENSE).
+ */
+
+package org.telegram.ui;
+
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.formatString;
+import static org.telegram.messenger.LocaleController.getString;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Typeface;
+import android.text.TextUtils;
+import android.text.format.DateFormat;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.TelezhkaPingMonitor;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.BackDrawable;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ProxyDotGridView;
+import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
+
+import java.util.ArrayList;
+import java.util.Date;
+
+/**
+ * "Connection" screen: live ping with a sparkline, the last pick as a dot grid,
+ * spare proxies (tap to switch) and a button to pick again.
+ */
+public class ProxyStatusActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+
+    private static final int INK = 0xFF0D0F14;
+    private static final int PANEL = 0xFF161A22;
+    private static final int LINE = 0xFF262C37;
+    private static final int TEXT = 0xFFECEFF4;
+    private static final int MUTE = 0xFF8B93A3;
+    private static final int SIGNAL = 0xFFFF6B3D;
+    private static final int OK = 0xFF3DDC97;
+    private static final int OK_DIM = 0xFF123A2A;
+
+    private TextView pillText;
+    private View pillDot;
+    private TextView pingText;
+    private TextView addressText;
+    private SparklineView sparkline;
+    private LinearLayout sparesList;
+    private ProxyDotGridView lastGrid;
+    private TextView lastInfo;
+    private LinearLayout lastCard;
+    private final TelezhkaPingMonitor.Listener pingListener = ping -> updateHero();
+
+    @Override
+    public boolean onFragmentCreate() {
+        SharedConfig.loadProxyList();
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.proxySettingsChanged);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didUpdateConnectionState);
+        return super.onFragmentCreate();
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        super.onFragmentDestroy();
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.proxySettingsChanged);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didUpdateConnectionState);
+        TelezhkaPingMonitor.stop(pingListener);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateAll();
+        TelezhkaPingMonitor.start(pingListener, 2000);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        TelezhkaPingMonitor.stop(pingListener);
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        updateAll();
+    }
+
+    @Override
+    public View createView(Context context) {
+        actionBar.setBackButtonDrawable(new BackDrawable(false));
+        actionBar.setAllowOverlayTitle(false);
+        actionBar.setTitle(getString(R.string.TelezhkaConnectionTitle));
+        actionBar.setBackgroundColor(INK);
+        actionBar.setItemsColor(TEXT, false);
+        actionBar.setTitleColor(TEXT);
+        actionBar.setCastShadows(false);
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                }
+            }
+        });
+
+        FrameLayout root = new FrameLayout(context);
+        root.setBackgroundColor(INK);
+        ScrollView scrollView = new ScrollView(context);
+        scrollView.setVerticalScrollBarEnabled(false);
+        root.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dp(18), dp(8), dp(18), dp(28));
+        scrollView.addView(layout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
+
+        // Hero card: status, big ping, sparkline, address
+        LinearLayout hero = card(context);
+        hero.setPadding(dp(18), dp(18), dp(18), dp(16));
+        LinearLayout pill = new LinearLayout(context);
+        pill.setOrientation(LinearLayout.HORIZONTAL);
+        pill.setGravity(Gravity.CENTER_VERTICAL);
+        pill.setPadding(dp(12), dp(6), dp(12), dp(6));
+        pill.setBackground(Theme.createRoundRectDrawable(dp(20), INK));
+        pillDot = new View(context);
+        pill.addView(pillDot, LayoutHelper.createLinear(8, 8, 0, 0, 8, 0));
+        pillText = new TextView(context);
+        pillText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        pillText.setTypeface(AndroidUtilities.bold());
+        pillText.setTextColor(TEXT);
+        pill.addView(pillText);
+        hero.addView(pill, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT));
+
+        pingText = new TextView(context);
+        pingText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 34);
+        pingText.setTypeface(Typeface.create(Typeface.MONOSPACE, Typeface.BOLD));
+        pingText.setTextColor(TEXT);
+        hero.addView(pingText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
+
+        sparkline = new SparklineView(context);
+        hero.addView(sparkline, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 54, 0, 8, 0, 8));
+
+        LinearLayout addressRow = new LinearLayout(context);
+        addressRow.setOrientation(LinearLayout.HORIZONTAL);
+        addressText = new TextView(context);
+        addressText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        addressText.setTypeface(Typeface.MONOSPACE);
+        addressText.setTextColor(MUTE);
+        addressText.setSingleLine(true);
+        addressText.setEllipsize(TextUtils.TruncateAt.END);
+        addressRow.addView(addressText, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+        TextView live = new TextView(context);
+        live.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        live.setTextColor(MUTE);
+        live.setText(getString(R.string.TelezhkaConnectionLive));
+        addressRow.addView(live);
+        hero.addView(addressRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        layout.addView(hero, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        // Last pick
+        lastCard = card(context);
+        lastCard.setPadding(dp(14), dp(14), dp(14), dp(12));
+        lastGrid = new ProxyDotGridView(context);
+        lastGrid.setColumns(12);
+        lastCard.addView(lastGrid, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        lastInfo = new TextView(context);
+        lastInfo.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        lastInfo.setTextColor(MUTE);
+        lastCard.addView(lastInfo, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 10, 0, 0));
+        layout.addView(header(context, getString(R.string.TelezhkaConnectionLastPick)));
+        layout.addView(lastCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        // Spares
+        layout.addView(header(context, getString(R.string.TelezhkaConnectionSpares)));
+        sparesList = card(context);
+        layout.addView(sparesList, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        ButtonWithCounterView again = new ButtonWithCounterView(context, getResourceProvider());
+        again.setText(getString(R.string.ProxyPickerAgain), false);
+        again.setOnClickListener(v -> presentFragment(new ProxyPickerActivity(true)));
+        layout.addView(again, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 54, 0, 18, 0, 0));
+
+        TextView all = new TextView(context);
+        all.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        all.setTypeface(AndroidUtilities.bold());
+        all.setTextColor(SIGNAL);
+        all.setGravity(Gravity.CENTER);
+        all.setText(getString(R.string.TelezhkaConnectionAllSettings));
+        all.setBackground(Theme.createSelectorDrawable(0x22FFFFFF, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        all.setOnClickListener(v -> presentFragment(new ProxyListActivity()));
+        layout.addView(all, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, 0, 8, 0, 0));
+
+        TextView warning = new TextView(context);
+        warning.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        warning.setTextColor(MUTE);
+        warning.setGravity(Gravity.CENTER);
+        warning.setText(getString(R.string.ProxyPickerWarning));
+        layout.addView(warning, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
+
+        fragmentView = root;
+        updateAll();
+        return fragmentView;
+    }
+
+    private LinearLayout card(Context context) {
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(Theme.createRoundRectDrawable(dp(20), PANEL));
+        return card;
+    }
+
+    private TextView header(Context context, String text) {
+        TextView header = new TextView(context);
+        header.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+        header.setTypeface(AndroidUtilities.bold());
+        header.setLetterSpacing(0.12f);
+        header.setTextColor(MUTE);
+        header.setText(text.toUpperCase());
+        header.setPadding(dp(4), dp(22), 0, dp(8));
+        return header;
+    }
+
+    private boolean isConnected() {
+        int state = ConnectionsManager.getInstance(currentAccount).getConnectionState();
+        return state == ConnectionsManager.ConnectionStateConnected || state == ConnectionsManager.ConnectionStateUpdating;
+    }
+
+    private void updateAll() {
+        if (fragmentView == null) {
+            return;
+        }
+        updateHero();
+        updateLastPick();
+        updateSpares();
+    }
+
+    private void updateHero() {
+        if (pingText == null) {
+            return;
+        }
+        boolean proxy = SharedConfig.isProxyEnabled() && SharedConfig.currentProxy != null;
+        boolean connected = isConnected();
+        int dotColor;
+        if (!connected) {
+            pillText.setText(getString(R.string.TelezhkaConnectionConnecting));
+            dotColor = SIGNAL;
+        } else if (proxy) {
+            pillText.setText(getString(R.string.TelezhkaConnectionViaProxy));
+            dotColor = OK;
+        } else {
+            pillText.setText(getString(R.string.TelezhkaConnectionDirect));
+            dotColor = OK;
+        }
+        pillDot.setBackground(Theme.createCircleDrawable(dp(8), dotColor));
+        long ping = TelezhkaPingMonitor.getLastPing();
+        String value = proxy && ping > 0 ? String.valueOf(ping) : "—";
+        if (!value.contentEquals(pingText.getText().toString().split(" ")[0])) {
+            pingText.setScaleX(0.9f);
+            pingText.setScaleY(0.9f);
+            pingText.setPivotX(0);
+            pingText.animate().scaleX(1f).scaleY(1f).setDuration(350).setInterpolator(CubicBezierInterpolator.EASE_OUT_BACK).start();
+        }
+        pingText.setText(value + " " + getString(R.string.TelezhkaMs));
+        addressText.setText(proxy ? SharedConfig.currentProxy.settings.getAddress() + " : " + SharedConfig.currentProxy.settings.getPort() : getString(R.string.TelezhkaConnectionNoProxy));
+        sparkline.setValues(TelezhkaPingMonitor.getHistory());
+    }
+
+    private void updateLastPick() {
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        String snapshot = preferences.getString("telezhka_last_pick", null);
+        if (TextUtils.isEmpty(snapshot)) {
+            lastGrid.setVisibility(View.GONE);
+            lastInfo.setText(getString(R.string.TelezhkaConnectionNoPick));
+            return;
+        }
+        lastGrid.setVisibility(View.VISIBLE);
+        lastGrid.restore(snapshot);
+        long time = preferences.getLong("telezhka_last_pick_time", 0);
+        lastInfo.setText(formatString(R.string.TelezhkaConnectionPickInfo,
+                preferences.getInt("telezhka_last_pick_checked", snapshot.length()),
+                preferences.getInt("telezhka_last_pick_working", 0),
+                DateFormat.getTimeFormat(getParentActivity() != null ? getParentActivity() : lastInfo.getContext()).format(new Date(time))));
+    }
+
+    private void updateSpares() {
+        sparesList.removeAllViews();
+        Context context = sparesList.getContext();
+        ArrayList<SharedConfig.ProxyInfo> spares = new ArrayList<>();
+        for (SharedConfig.ProxyInfo info : SharedConfig.proxyList) {
+            if (info != SharedConfig.currentProxy || !SharedConfig.isProxyEnabled()) {
+                spares.add(info);
+            }
+        }
+        if (spares.isEmpty()) {
+            TextView empty = new TextView(context);
+            empty.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            empty.setTextColor(MUTE);
+            empty.setPadding(dp(16), dp(14), dp(16), dp(14));
+            empty.setText(getString(R.string.TelezhkaConnectionNoSpares));
+            sparesList.addView(empty);
+            return;
+        }
+        for (int i = 0; i < spares.size(); i++) {
+            SharedConfig.ProxyInfo info = spares.get(i);
+            LinearLayout row = new LinearLayout(context);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(dp(14), dp(13), dp(14), dp(13));
+            row.setBackground(Theme.createSelectorDrawable(0x14FFFFFF, Theme.RIPPLE_MASK_ALL));
+            PingBarsView bars = new PingBarsView(context, info.available ? info.ping : -1);
+            row.addView(bars, LayoutHelper.createLinear(16, 14, 0, 0, 12, 0));
+            TextView address = new TextView(context);
+            address.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            address.setTypeface(Typeface.MONOSPACE);
+            address.setTextColor(TEXT);
+            address.setSingleLine(true);
+            address.setEllipsize(TextUtils.TruncateAt.END);
+            address.setText(info.settings.getAddress() + " : " + info.settings.getPort());
+            row.addView(address, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+            TextView ping = new TextView(context);
+            ping.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            ping.setTypeface(Typeface.MONOSPACE);
+            ping.setTextColor(MUTE);
+            ping.setText(info.available && info.ping > 0 ? info.ping + " " + getString(R.string.TelezhkaMs) : "—");
+            row.addView(ping, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 8, 0, 0, 0));
+            row.setOnClickListener(v -> switchTo(info));
+            row.setAlpha(0f);
+            row.setTranslationY(dp(8));
+            row.animate().alpha(1f).translationY(0).setStartDelay(40L * i).setDuration(300).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
+            sparesList.addView(row);
+            if (i < spares.size() - 1) {
+                View divider = new View(context);
+                divider.setBackgroundColor(LINE);
+                sparesList.addView(divider, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1, 14, 0, 14, 0));
+            }
+        }
+    }
+
+    private void switchTo(SharedConfig.ProxyInfo info) {
+        SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
+        info.settings.toSharedPreferences(editor);
+        editor.putBoolean("proxy_enabled", true);
+        editor.commit();
+        SharedConfig.currentProxy = info;
+        ConnectionsManager.setProxySettings(true, info.settings);
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
+        TelezhkaPingMonitor.refresh();
+        updateAll();
+    }
+
+    private static class PingBarsView extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final int level;
+
+        PingBarsView(Context context, long ping) {
+            super(context);
+            level = ping <= 0 ? 0 : ping < 150 ? 3 : ping < 280 ? 2 : 1;
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            float w = dp(3), gap = dp(2);
+            for (int i = 0; i < 3; i++) {
+                float h = getHeight() * (i + 1) / 3f;
+                paint.setColor(i < level ? (level == 1 ? SIGNAL : OK) : LINE);
+                float x = i * (w + gap);
+                canvas.drawRoundRect(x, getHeight() - h, x + w, getHeight(), dp(1), dp(1), paint);
+            }
+        }
+    }
+
+    // Ping history: area fill, line, highlighted last point
+    private static class SparklineView extends View {
+        private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint dot = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path path = new Path();
+        private final Path area = new Path();
+        private final ArrayList<Long> values = new ArrayList<>();
+
+        SparklineView(Context context) {
+            super(context);
+            line.setStyle(Paint.Style.STROKE);
+            line.setStrokeWidth(dp(2));
+            line.setStrokeJoin(Paint.Join.ROUND);
+            line.setColor(OK);
+            fill.setColor(OK);
+            fill.setAlpha(30);
+            dot.setColor(OK);
+        }
+
+        void setValues(ArrayList<Long> history) {
+            values.clear();
+            values.addAll(history);
+            invalidate();
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            int n = values.size();
+            float w = getWidth(), h = getHeight(), pad = dp(5);
+            if (n < 2) {
+                line.setAlpha(80);
+                canvas.drawLine(0, h / 2, w, h / 2, line);
+                line.setAlpha(255);
+                return;
+            }
+            long min = Long.MAX_VALUE, max = 0;
+            for (long v : values) {
+                min = Math.min(min, v);
+                max = Math.max(max, v);
+            }
+            float range = Math.max(20, max - min);
+            path.reset();
+            area.reset();
+            float lastX = 0, lastY = 0;
+            for (int i = 0; i < n; i++) {
+                float x = w * i / (TelezhkaPingMonitor.MAX_HISTORY - 1f) + (w - w * (n - 1) / (TelezhkaPingMonitor.MAX_HISTORY - 1f));
+                float y = pad + (h - pad * 2) * (1 - (values.get(i) - min) / range);
+                if (i == 0) {
+                    path.moveTo(x, y);
+                    area.moveTo(x, h);
+                    area.lineTo(x, y);
+                } else {
+                    path.lineTo(x, y);
+                    area.lineTo(x, y);
+                }
+                lastX = x;
+                lastY = y;
+            }
+            area.lineTo(lastX, h);
+            area.close();
+            canvas.drawPath(area, fill);
+            canvas.drawPath(path, line);
+            dot.setColor(OK_DIM);
+            canvas.drawCircle(lastX - dp(1), lastY, dp(7), dot);
+            dot.setColor(OK);
+            canvas.drawCircle(lastX - dp(1), lastY, dp(4), dot);
+        }
+    }
+}

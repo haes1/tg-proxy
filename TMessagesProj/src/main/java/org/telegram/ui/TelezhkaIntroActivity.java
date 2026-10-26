@@ -154,8 +154,8 @@ public class TelezhkaIntroActivity extends BaseFragment {
         page.addView(art, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 300, 0, 0, 0, 28));
 
         TextView title = new TextView(context);
-        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 28);
-        title.setTypeface(AndroidUtilities.bold());
+        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
+        title.setTypeface(AndroidUtilities.display());
         title.setTextColor(TEXT);
         title.setText(getString(TITLES[position]));
         page.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
