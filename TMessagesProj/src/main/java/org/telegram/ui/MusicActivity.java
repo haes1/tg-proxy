@@ -116,6 +116,7 @@ public class MusicActivity extends BaseFragment implements NotificationCenter.No
         nc.removeObserver(this, NotificationCenter.messagePlayingDidReset);
         nc.removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
         AndroidUtilities.cancelRunOnUIThread(searchRunnable);
+        AndroidUtilities.cancelRunOnUIThread(reloadMine);
         if (ambient != null) {
             ambient.receiver.onDetachedFromWindow();
         }
@@ -345,6 +346,14 @@ public class MusicActivity extends BaseFragment implements NotificationCenter.No
             mine = tracks;
             fillMine();
         });
+    }
+
+    private final Runnable reloadMine = this::loadMine;
+
+    // After a like or unlike: refresh "My songs" once the taps settle
+    private void reloadMineSoon() {
+        AndroidUtilities.cancelRunOnUIThread(reloadMine);
+        AndroidUtilities.runOnUIThread(reloadMine, 1200);
     }
 
     private void fillMine() {
@@ -804,9 +813,7 @@ public class MusicActivity extends BaseFragment implements NotificationCenter.No
                 boolean now = !TelezhkaMusic.isLiked(track.id);
                 TelezhkaMusic.setLiked(track, now);
                 heart.setLiked(now, true);
-                if (now && track.isReady() && !mine.contains(track)) {
-                    mine.add(0, track);
-                }
+                reloadMineSoon();
             });
             addView(heart, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
 
@@ -1091,15 +1098,16 @@ public class MusicActivity extends BaseFragment implements NotificationCenter.No
             info.addView(texts, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
             heart = new HeartView(context);
             heart.setOnClickListener(v -> {
+                // Works for any playing track, also one that came from a search that is closed now
                 String id = TelezhkaMusic.playingTrackId();
-                TelezhkaMusic.Track track = id != null ? findTrack(id) : null;
-                if (track == null) {
+                if (id == null) {
                     return;
                 }
                 boolean now = !TelezhkaMusic.isLiked(id);
-                TelezhkaMusic.setLiked(track, now);
+                TelezhkaMusic.setLiked(id, now);
                 heart.setLiked(now, true);
                 updatePlayingUi();
+                reloadMineSoon();
             });
             info.addView(heart, LayoutHelper.createLinear(48, 48));
             column.addView(info, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 30, 0, 0));

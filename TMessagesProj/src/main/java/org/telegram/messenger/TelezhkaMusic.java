@@ -188,12 +188,19 @@ public class TelezhkaMusic {
     }
 
     public static void setLiked(Track track, boolean like) {
-        if (like) {
-            liked.add(track.id);
-        } else {
-            liked.remove(track.id);
+        setLiked(track.id, like);
+    }
+
+    public static void setLiked(String id, boolean like) {
+        if (id == null) {
+            return;
         }
-        inline((like ? "tz:like " : "tz:unlike ") + track.id, (tracks, error) -> {});
+        if (like) {
+            liked.add(id);
+        } else {
+            liked.remove(id);
+        }
+        inline((like ? "tz:like " : "tz:unlike ") + id, (tracks, error) -> {});
     }
 
     // Asks the bot to download a track, then waits until it shows up as a ready audio file

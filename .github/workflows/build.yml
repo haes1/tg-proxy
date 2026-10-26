@@ -71,6 +71,23 @@ jobs:
           fi
           grep -n "APP_ID =\|PROXY_LIST_URL =" "$FILE"
 
+      - name: Use own signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.TELEZHKA_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.TELEZHKA_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::warning::TELEZHKA_KEYSTORE_* secrets are not set, signing with the public test key from the Telegram sources"
+            exit 0
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > TMessagesProj/config/release.keystore
+          {
+            echo "ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS=telezhka"
+          } >> "$GITHUB_ENV"
+          echo "Signing with the Telezhka key"
+
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: native-arm64
