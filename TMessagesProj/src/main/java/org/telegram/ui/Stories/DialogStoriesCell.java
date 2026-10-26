@@ -944,7 +944,17 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             telegramLogoView.setTranslationX(titleView.getTranslationX() + dp(1));
             telegramLogoView.setTranslationY(bottomY + dp(14 + FAKE_TOP_PADDING + 4.333f) + translationOffset /*titleView.getTranslationY() + dpf2(37.33f)*/);
 
-            emojiStatusView.setTranslationX(titleView.getTranslationX() - dpf2(3.33f) + telegramLogoView.getMeasuredWidth());
+            // Telezhka: "тележка" is wider than Telegram's logo, so it shrinks smoothly to fit
+            // between the story avatars and the menu instead of being cut to "теле…"
+            final float logoWidth = telegramLogoView.getDrawable() != null ? telegramLogoView.getDrawable().getIntrinsicWidth() : 0;
+            final float logoRoom = getWidth() - Math.max(0, clipRightPadding) - telegramLogoView.getTranslationX() - dp(14);
+            final float logoScale = logoWidth > 0 ? MathUtils.clamp(logoRoom / logoWidth, 0.55f, 1f) : 1f;
+            telegramLogoView.setPivotX(0);
+            telegramLogoView.setPivotY(telegramLogoView.getMeasuredHeight() / 2f);
+            telegramLogoView.setScaleX(logoScale);
+            telegramLogoView.setScaleY(logoScale);
+
+            emojiStatusView.setTranslationX(titleView.getTranslationX() - dpf2(3.33f) + (logoWidth > 0 ? logoWidth * logoScale + dp(6) : telegramLogoView.getMeasuredWidth()));
             emojiStatusView.setTranslationY(bottomY + dp(14 - 11 + FAKE_TOP_PADDING + 4.333f) + translationOffset);
 
             subtitleOverlayContainer.setTranslationX(titleView.getTranslationX());
