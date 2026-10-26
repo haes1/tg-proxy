@@ -46,7 +46,7 @@ public class TelezhkaUpdater {
     private static final long CHECK_PERIOD_MS = 60 * 60 * 1000L;
     private static final String PREFS = "telezhka_updater";
     private static final String KEY_SKIPPED = "skipped_build";
-    private static final int MAX_ITEMS = 4;
+    private static final int MAX_ITEMS = 4;  // lines shown in the popup
 
     private static boolean checking;
     private static long lastCheck;

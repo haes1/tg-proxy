@@ -97,8 +97,9 @@ android {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.release
-            minifyEnabled true
-            shrinkResources true
+            // -PtelezhkaFast (local builds on the Mac, see build.sh): skip R8 so a small change builds in minutes
+            minifyEnabled !project.hasProperty("telezhkaFast")
+            shrinkResources !project.hasProperty("telezhkaFast")
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../TMessagesProj/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
