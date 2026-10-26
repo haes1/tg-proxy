@@ -135,12 +135,12 @@ public class MusicActivity extends BaseFragment implements NotificationCenter.No
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (fullPlayer != null && fullPlayer.isOpen()) {
-            fullPlayer.close();
+            if (invoked) fullPlayer.close();
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     @Override
