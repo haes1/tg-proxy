@@ -54,6 +54,9 @@ public class TelezhkaMusic {
     private static final HashSet<String> liked = new HashSet<>();
     private static final HashMap<String, Long> preparing = new HashMap<>();
     private static long lastSendTime;
+    // Ids of the in-memory messages Telegram's player is playing -> track id
+    private static final HashMap<Integer, String> playingIds = new HashMap<>();
+    private static final int ID_BASE = 1_500_000_000;
 
     public static boolean isLiked(String id) {
         return liked.contains(id);
@@ -247,11 +250,17 @@ public class TelezhkaMusic {
         }), POLL_MS);
     }
 
+    // Track id of what Telegram's player is playing right now, or null
+    public static String playingTrackId() {
+        MessageObject playing = MediaController.getInstance().getPlayingMessageObject();
+        return playing != null ? playingIds.get(playing.getId()) : null;
+    }
+
     // A message that only lives in memory, so Telegram's own player can play the track
-    public static MessageObject toMessageObject(Track track) {
+    private static MessageObject toMessageObject(Track track, int messageId) {
         TLRPC.TL_message message = new TLRPC.TL_message();
         message.out = true;
-        message.id = -Math.abs(track.id.hashCode() % 1_000_000_000) - 1;
+        message.id = messageId;
         message.peer_id = new TLRPC.TL_peerUser();
         message.from_id = new TLRPC.TL_peerUser();
         message.peer_id.user_id = message.from_id.user_id = UserConfig.getInstance(account()).getClientUserId();
@@ -266,13 +275,23 @@ public class TelezhkaMusic {
     }
 
     public static void play(ArrayList<Track> list, Track current) {
+        ArrayList<Track> ready = new ArrayList<>();
+        for (Track track : list) {
+            if (track.isReady()) {
+                ready.add(track);
+            }
+        }
+        // Telegram sorts its queue by message id and "next" walks towards larger negative ids,
+        // so the first track gets the smallest id: the queue then plays exactly in list order.
+        playingIds.clear();
         ArrayList<MessageObject> playlist = new ArrayList<>();
         MessageObject currentObject = null;
-        for (Track track : list) {
-            if (!track.isReady()) {
-                continue;
-            }
-            MessageObject object = toMessageObject(track);
+        int n = ready.size();
+        for (int k = 0; k < n; k++) {
+            Track track = ready.get(k);
+            int id = -(ID_BASE + n - k);
+            playingIds.put(id, track.id);
+            MessageObject object = toMessageObject(track, id);
             playlist.add(object);
             if (track == current) {
                 currentObject = object;
@@ -282,7 +301,8 @@ public class TelezhkaMusic {
             currentObject = playlist.get(0);
         }
         if (currentObject != null) {
-            MediaController.getInstance().setPlaylist(playlist, currentObject, 0);
+            // loadMusic = false: do not mix in music from Saved Messages
+            MediaController.getInstance().setPlaylist(playlist, currentObject, 0, false, null);
         }
     }
 }

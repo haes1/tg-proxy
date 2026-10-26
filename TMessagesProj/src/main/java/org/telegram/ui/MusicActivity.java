@@ -322,7 +322,7 @@ public class MusicActivity extends BaseFragment implements NotificationCenter.No
     private void onTrackClick(TelezhkaMusic.Track track, ArrayList<TelezhkaMusic.Track> list, TrackRow row) {
         if (track.isReady()) {
             MessageObject playing = MediaController.getInstance().getPlayingMessageObject();
-            if (playing != null && playing.getId() == TelezhkaMusic.toMessageObject(track).getId()) {
+            if (playing != null && track.id.equals(TelezhkaMusic.playingTrackId())) {
                 if (MediaController.getInstance().isMessagePaused()) {
                     MediaController.getInstance().playMessage(playing);
                 } else {
@@ -443,8 +443,7 @@ public class MusicActivity extends BaseFragment implements NotificationCenter.No
         }
 
         void updateState() {
-            MessageObject playing = MediaController.getInstance().getPlayingMessageObject();
-            boolean isCurrent = track.isReady() && playing != null && playing.getId() == TelezhkaMusic.toMessageObject(track).getId();
+            boolean isCurrent = track.isReady() && track.id.equals(TelezhkaMusic.playingTrackId());
             boolean paused = MediaController.getInstance().isMessagePaused();
             title.setTextColor(isCurrent ? SIGNAL : TEXT);
             equalizer.setState(isCurrent, isCurrent && !paused);
