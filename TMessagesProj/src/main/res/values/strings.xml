@@ -11784,4 +11784,19 @@
     <string name="TelezhkaSaveRound">Сохранить кружок</string>
     <string name="TelezhkaSaveRoundFirst">Сначала посмотрите кружок, чтобы он скачался</string>
     <string name="TelezhkaVoiceFailed">Не получилось расшифровать голосовое. Попробуйте ещё раз.</string>
+    <string name="TelezhkaChannelName">Тележка · новости</string>
+    <string name="TelezhkaChannelNew">новый канал</string>
+    <string name="TelezhkaChannelTitle">Всё новое
+в Тележке первым</string>
+    <string name="TelezhkaChannelTitleAccent">Тележке</string>
+    <string name="TelezhkaChannelLead">Новые функции, что делать, если пропала связь, и ваши идеи. Раз в несколько дней, без спама.</string>
+    <string name="TelezhkaChannelSubscribe">Подписаться</string>
+    <string name="TelezhkaChannelSubscribed">Вы подписаны</string>
+    <string name="TelezhkaChannelNever">Больше не показывать</string>
+    <string name="TelezhkaChannelPost">Новый пост</string>
+    <string name="TelezhkaChannelSubscribedDone">Канал Тележки теперь в списке чатов</string>
+    <string name="TelezhkaChannelNeverDone">Больше не покажем</string>
+    <string name="TelezhkaChannelLaterDone">Напомним через неделю</string>
+    <string name="TelezhkaSectionNews">Новости</string>
+    <string name="TelezhkaNewsRow">Канал Тележки</string>
 </resources>

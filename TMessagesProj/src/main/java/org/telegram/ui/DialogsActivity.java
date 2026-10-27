@@ -129,6 +129,7 @@ import org.telegram.ui.Components.ProxyPingPillDrawable;
 import org.telegram.messenger.TelezhkaHiddenChats;
 import org.telegram.messenger.TelezhkaPingMonitor;
 import org.telegram.messenger.TelezhkaUpdater;
+import org.telegram.messenger.TelezhkaChannelPromo;
 import org.telegram.ui.Components.TelezhkaPopup;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -7143,6 +7144,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 AndroidUtilities.runOnUIThread(() -> BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, getString(R.string.TelezhkaPinResetDone)).show(), 450);
             }
             TelezhkaUpdater.check(this);
+            TelezhkaChannelPromo.maybeShow(this);
         }
         if (dialogStoriesCell != null) {
             dialogStoriesCell.onResume();

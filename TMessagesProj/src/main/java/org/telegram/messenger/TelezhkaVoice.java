@@ -42,7 +42,9 @@ public class TelezhkaVoice {
             media.id.access_hash = document.access_hash;
             media.id.file_reference = document.file_reference != null ? document.file_reference : new byte[0];
             req.media = media;
-            req.message = "tz:stt " + token;
+            // the interface language is the language to expect: guessing it from a short voice went wrong
+            String lang = LocaleController.getInstance().getCurrentLocale() != null ? LocaleController.getInstance().getCurrentLocale().getLanguage() : "ru";
+            req.message = "tz:stt " + token + " " + (android.text.TextUtils.isEmpty(lang) ? "ru" : lang);
             req.random_id = Utilities.random.nextLong();
             req.silent = true;
             ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {

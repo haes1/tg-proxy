@@ -114,6 +114,10 @@ public class TelezhkaUpdater {
         });
     }
 
+    public static boolean isPopupShownThisLaunch() {
+        return shownThisLaunch;
+    }
+
     public static int latestKnownBuild() {
         return pending != null ? pending.build : 0;
     }

@@ -124,6 +124,12 @@ public class TelezhkaSettingsActivity extends BaseFragment {
         })));
         layout.addView(updates);
 
+        // News channel
+        layout.addView(header(context, getString(R.string.TelezhkaSectionNews)));
+        LinearLayout news = card(context);
+        news.addView(linkRow(context, getString(R.string.TelezhkaNewsRow), "@" + BuildVars.NEWS_CHANNEL, () -> org.telegram.messenger.TelezhkaChannelPromo.showNow(this)));
+        layout.addView(news);
+
         // Saving where it is forbidden: last, with the risk spelled out
         layout.addView(header(context, getString(R.string.TelezhkaSectionSaving)));
         LinearLayout saving = card(context);
