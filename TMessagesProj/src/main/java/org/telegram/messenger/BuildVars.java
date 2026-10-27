@@ -38,6 +38,9 @@ public class BuildVars {
     public static int TELEZHKA_BUILD = 0;
     // Music bot behind the "Музыка" screen (see app_api.py in the bot)
     public static String MUSIC_BOT_USERNAME = "naidi_trek_bot";
+    public static long MUSIC_BOT_ID = 8815255287L;
+    // News channel offered once in a while by TelezhkaChannelPromo
+    public static String NEWS_CHANNEL = "teleskaoff";
     public static String[] PROXY_LIST_MIRRORS = {
             "https://cdn.jsdelivr.net/gh/telesga/tg-proxy@main/proxies.json"
     };
