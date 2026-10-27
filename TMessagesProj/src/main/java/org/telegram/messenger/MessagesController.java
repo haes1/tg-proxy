@@ -21090,13 +21090,28 @@ public class MessagesController extends BaseController implements NotificationCe
         LongSparseArray<ArrayList<Integer>> markContentAsReadMessagesFinal = markContentAsReadMessages;
         SparseIntArray markAsReadEncryptedFinal = markAsReadEncrypted;
         if (deletedMessages != null && TelezhkaPrivacy.keepDeleted()) {
-            // Telezhka: messages the other side deleted stay in the chat, marked "удалено"
-            for (int a = 0, size = deletedMessages.size(); a < size; a++) {
-                TelezhkaPrivacy.markDeleted(currentAccount, deletedMessages.keyAt(a), deletedMessages.valueAt(a));
-            }
+            // Telezhka: messages the other side deleted stay in the chat, marked "удалено".
+            // Service messages to our bot (music, voice-to-text) are deleted as usual.
             final LongSparseArray<ArrayList<Integer>> kept = deletedMessages;
-            AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.telezhkaMessagesMarkedDeleted, kept));
             deletedMessages = null;
+            getMessagesStorage().getStorageQueue().postRunnable(() -> {
+                ArrayList<Integer> common = kept.get(0);
+                if (common != null && !common.isEmpty()) {
+                    ArrayList<Integer> botIds = getMessagesStorage().telezhkaIdsInDialog(BuildVars.MUSIC_BOT_ID, common);
+                    if (!botIds.isEmpty()) {
+                        common.removeAll(botIds);
+                        ArrayList<Long> dialogIds = getMessagesStorage().markMessagesAsDeleted(0, botIds, false, true, 0, 0);
+                        getMessagesStorage().updateDialogsWithDeletedMessages(0, 0, botIds, dialogIds);
+                        AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, botIds, 0L, false));
+                    }
+                }
+                for (int a = 0, size = kept.size(); a < size; a++) {
+                    if (!kept.valueAt(a).isEmpty()) {
+                        TelezhkaPrivacy.markDeleted(currentAccount, kept.keyAt(a), kept.valueAt(a));
+                    }
+                }
+                AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.telezhkaMessagesMarkedDeleted, kept));
+            });
         }
         LongSparseArray<ArrayList<Integer>> deletedMessagesFinal = deletedMessages;
         LongSparseArray<ArrayList<Integer>> deletedQuickRepliesMessagesFinal = deletedQuickReplyMessages;

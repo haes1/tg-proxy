@@ -11783,4 +11783,5 @@
     <string name="TelezhkaEditNow">Сейчас:</string>
     <string name="TelezhkaSaveRound">Сохранить кружок</string>
     <string name="TelezhkaSaveRoundFirst">Сначала посмотрите кружок, чтобы он скачался</string>
+    <string name="TelezhkaVoiceFailed">Не получилось расшифровать голосовое. Попробуйте ещё раз.</string>
 </resources>

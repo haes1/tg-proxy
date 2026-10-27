@@ -28,6 +28,8 @@ import androidx.core.math.MathUtils;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.TelezhkaVoice;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
@@ -112,7 +114,7 @@ public class TranscribeButton {
 
         this.isOpen = false;
         this.shouldBeOpen = false;
-        premium = parent.getMessageObject() != null && UserConfig.getInstance(parent.getMessageObject().currentAccount).isPremium();
+        premium = parent.getMessageObject() != null && (UserConfig.getInstance(parent.getMessageObject().currentAccount).isPremium() || TelezhkaVoice.available());
 
         loadingFloat = new AnimatedFloat(parent, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
         animatedDrawLock = new AnimatedFloat(parent, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -687,6 +689,10 @@ public class TranscribeButton {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("sending Transcription request, msg_id=" + messageId + " dialog_id=" + dialogId);
                 }
+                if (!UserConfig.getInstance(account).isPremium() && TelezhkaVoice.available()) {
+                    telezhkaTranscribe(messageObject, account, dialogId, messageId);
+                    return;
+                }
                 TLRPC.TL_messages_transcribeAudio req = new TLRPC.TL_messages_transcribeAudio();
                 req.peer = peer;
                 req.msg_id = messageId;
@@ -772,6 +778,38 @@ public class TranscribeButton {
                 NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.voiceTranscriptionUpdate, messageObject, null, null, (Boolean) false, null);
             });
         }
+    }
+
+    // Telezhka: the text comes from our bot instead of Telegram Premium
+    private static void telezhkaTranscribe(MessageObject messageObject, int account, long dialogId, int messageId) {
+        if (transcribeOperationsByDialogPosition == null) {
+            transcribeOperationsByDialogPosition = new HashMap<>();
+        }
+        transcribeOperationsByDialogPosition.put((Integer) reqInfoHash(messageObject), messageObject);
+        final long id = -SystemClock.elapsedRealtime();
+        TelezhkaVoice.transcribe(messageObject, text -> {
+            if (text == null) {
+                if (transcribeOperationsByDialogPosition != null) {
+                    transcribeOperationsByDialogPosition.remove((Integer) reqInfoHash(messageObject));
+                }
+                NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.voiceTranscriptionUpdate, messageObject);
+                BulletinFactory global = BulletinFactory.global();
+                if (global != null) {
+                    global.createErrorBulletin(LocaleController.getString(R.string.TelezhkaVoiceFailed)).show();
+                }
+                return;
+            }
+            if (transcribeOperationsById == null) {
+                transcribeOperationsById = new HashMap<>();
+            }
+            transcribeOperationsById.put(id, messageObject);
+            messageObject.messageOwner.voiceTranscriptionId = id;
+            TranscribeButton.openVideoTranscription(messageObject);
+            messageObject.messageOwner.voiceTranscriptionOpen = true;
+            messageObject.messageOwner.voiceTranscriptionFinal = true;
+            MessagesStorage.getInstance(account).updateMessageVoiceTranscription(dialogId, messageId, text, messageObject.messageOwner);
+            finishTranscription(messageObject, id, text);
+        });
     }
 
     public static boolean finishTranscription(MessageObject messageObject, long transcription_id, String text) {

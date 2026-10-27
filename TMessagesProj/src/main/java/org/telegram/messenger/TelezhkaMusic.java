@@ -70,7 +70,7 @@ public class TelezhkaMusic {
         return UserConfig.selectedAccount;
     }
 
-    private static void withBot(Utilities.Callback<TLRPC.User> callback, Runnable onError) {
+    static void withBot(Utilities.Callback<TLRPC.User> callback, Runnable onError) {
         if (bot != null) {
             callback.run(bot);
             return;

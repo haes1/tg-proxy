@@ -7854,6 +7854,25 @@ public class MessagesStorage extends BaseController {
         return ref.get();
     }
 
+    // Telezhka: which of these message ids belong to the given chat (run on the storage queue)
+    ArrayList<Integer> telezhkaIdsInDialog(long dialogId, ArrayList<Integer> ids) {
+        ArrayList<Integer> result = new ArrayList<>();
+        SQLiteCursor cursor = null;
+        try {
+            cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid FROM messages_v2 WHERE uid = %d AND mid IN(%s)", dialogId, TextUtils.join(",", ids)));
+            while (cursor.next()) {
+                result.add(cursor.intValue(0));
+            }
+        } catch (Exception e) {
+            checkSQLException(e);
+        } finally {
+            if (cursor != null) {
+                cursor.dispose();
+            }
+        }
+        return result;
+    }
+
     TLRPC.Message getMessageInternal(long dialogId, long msgId) {  // Telezhka: package access for edit history
         SQLiteCursor cursor = null;
         TLRPC.Message result = null;

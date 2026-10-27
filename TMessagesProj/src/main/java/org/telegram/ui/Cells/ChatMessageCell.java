@@ -129,6 +129,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TelezhkaPrivacy;
+import org.telegram.messenger.TelezhkaVoice;
 import org.telegram.messenger.RichMessageLayout;
 import org.telegram.messenger.RichQuote;
 import org.telegram.messenger.SendMessagesHelper;
@@ -12666,6 +12667,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             (!currentMessageObject.isOutOwner() || currentMessageObject.isSent()) &&
             (
                 UserConfig.getInstance(currentAccount).isPremium()
+                ||
+                TelezhkaVoice.available()  // Telezhka: free voice-to-text through our bot
                 ||
                 TranscribeButton.isFreeTranscribeInChat(currentMessageObject)
                 ||
