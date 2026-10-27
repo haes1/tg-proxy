@@ -10535,7 +10535,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         }
 
                         TL_account.updateStatus req = new TL_account.updateStatus();
-                        req.offline = TelezhkaPrivacy.hideOnline();  // Telezhka ghost mode: stay "last seen recently"
+                        req.offline = false;
                         statusRequest = getConnectionsManager().sendRequest(req, (response, error) -> {
                             if (error == null) {
                                 lastStatusUpdateTime = System.currentTimeMillis();
@@ -11388,7 +11388,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean sendTyping(long dialogId, long threadMsgId, int action, String emojicon, int classGuid) {
-        if (action < 0 || action >= sendingTypings.length || dialogId == 0 || TelezhkaPrivacy.hideTyping()) {
+        if (action < 0 || action >= sendingTypings.length || dialogId == 0) {
             return false;
         }
         final long selfId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
@@ -14417,9 +14417,6 @@ public class MessagesController extends BaseController implements NotificationCe
         long dialogId = messageObject.getDialogId();
         getMessagesStorage().markMessagesContentAsRead(dialogId, arrayList, 0, 0);
         getNotificationCenter().postNotificationName(NotificationCenter.messagesReadContent, dialogId, arrayList);
-        if (TelezhkaPrivacy.hideRead()) {
-            return;  // Telezhka ghost mode: a listened voice message stays "not listened" for the sender
-        }
         if (messageObject.getId() < 0) {
             markMessageAsRead(messageObject.getDialogId(), messageObject.messageOwner.random_id, Integer.MIN_VALUE);
         } else {
@@ -14572,9 +14569,6 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     private void completeReadTask(ReadTask task) {
-        if (TelezhkaPrivacy.hideRead()) {
-            return;  // Telezhka ghost mode: read locally, the other side does not see it
-        }
         if (task.replyId != 0 && task.monoForumPeerId == 0) {
             TLRPC.TL_messages_readDiscussion req = new TLRPC.TL_messages_readDiscussion();
             req.msg_id = (int) task.replyId;

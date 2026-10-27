@@ -42,7 +42,7 @@ import org.telegram.ui.Components.TelezhkaPopup;
 
 /**
  * "Настройки Тележки": everything Telezhka adds in one place —
- * privacy (ghost mode, kept deleted messages, saving everywhere), hidden chats, connection and updates.
+ * kept deleted messages, hidden chats, connection, updates and, last, saving where it is forbidden.
  */
 public class TelezhkaSettingsActivity extends BaseFragment {
 
@@ -51,12 +51,9 @@ public class TelezhkaSettingsActivity extends BaseFragment {
     private static final int TEXT = 0xFFECEFF4;
     private static final int MUTE = 0xFF8B93A3;
     private static final int SIGNAL = 0xFFFF6B3D;
-    private static final int GHOST = 0xFF9B8CFF;
     private static final int BAD = 0xFFFF5A5F;
     private static final int OK = 0xFF3DDC97;
     private static final String RISK_ACK = "telezhka_risk_ack";
-
-    private LinearLayout ghostOptions;
 
     @Override
     public View createView(Context context) {
@@ -86,29 +83,11 @@ public class TelezhkaSettingsActivity extends BaseFragment {
         layout.setPadding(dp(16), 0, dp(16), dp(28));
         scrollView.addView(layout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
 
-        // Privacy
-        layout.addView(header(context, getString(R.string.TelezhkaSectionPrivacy)));
-        LinearLayout privacy = card(context);
-        privacy.addView(switchRow(context, R.drawable.telezhka_ic_ghost, GHOST, getString(R.string.TelezhkaGhostTitle), getString(R.string.TelezhkaGhostInfo), TelezhkaPrivacy.GHOST, this::updateGhostOptions));
-        ghostOptions = new LinearLayout(context);
-        ghostOptions.setOrientation(LinearLayout.VERTICAL);
-        ghostOptions.setPadding(dp(46), 0, 0, dp(6));
-        ghostOptions.addView(subRow(context, getString(R.string.TelezhkaGhostRead), TelezhkaPrivacy.GHOST_READ));
-        ghostOptions.addView(subRow(context, getString(R.string.TelezhkaGhostOnline), TelezhkaPrivacy.GHOST_ONLINE));
-        ghostOptions.addView(subRow(context, getString(R.string.TelezhkaGhostTyping), TelezhkaPrivacy.GHOST_TYPING));
-        ghostOptions.addView(subRow(context, getString(R.string.TelezhkaGhostStories), TelezhkaPrivacy.GHOST_STORIES));
-        privacy.addView(ghostOptions);
-        privacy.addView(switchRow(context, R.drawable.msg_delete, BAD, getString(R.string.TelezhkaKeepDeletedTitle), getString(R.string.TelezhkaKeepDeletedInfo), TelezhkaPrivacy.KEEP_DELETED, null));
-        privacy.addView(switchRow(context, R.drawable.msg_download, OK, getString(R.string.TelezhkaSaveAllTitle), getString(R.string.TelezhkaSaveAllInfo), TelezhkaPrivacy.SAVE_ALL, null));
-        layout.addView(privacy);
-        TextView risk = new TextView(context);
-        risk.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
-        risk.setTextColor(MUTE);
-        risk.setLineSpacing(dp(2), 1f);
-        risk.setText(getString(R.string.TelezhkaRiskNote));
-        risk.setPadding(dp(6), dp(10), dp(6), 0);
-        layout.addView(risk);
-        updateGhostOptions();
+        // Messages
+        layout.addView(header(context, getString(R.string.TelezhkaSectionMessages)));
+        LinearLayout messages = card(context);
+        messages.addView(switchRow(context, R.drawable.msg_delete, BAD, getString(R.string.TelezhkaKeepDeletedTitle), getString(R.string.TelezhkaKeepDeletedInfo), TelezhkaPrivacy.KEEP_DELETED, false));
+        layout.addView(messages);
 
         // Hidden chats
         layout.addView(header(context, getString(R.string.TelezhkaHiddenTitle)));
@@ -145,6 +124,19 @@ public class TelezhkaSettingsActivity extends BaseFragment {
         })));
         layout.addView(updates);
 
+        // Saving where it is forbidden: last, with the risk spelled out
+        layout.addView(header(context, getString(R.string.TelezhkaSectionSaving)));
+        LinearLayout saving = card(context);
+        saving.addView(switchRow(context, R.drawable.msg_download, OK, getString(R.string.TelezhkaSaveAllTitle), getString(R.string.TelezhkaSaveAllInfo), TelezhkaPrivacy.SAVE_ALL, true));
+        layout.addView(saving);
+        TextView risk = new TextView(context);
+        risk.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+        risk.setTextColor(MUTE);
+        risk.setLineSpacing(dp(2), 1f);
+        risk.setText(getString(R.string.TelezhkaRiskNote));
+        risk.setPadding(dp(6), dp(10), dp(6), 0);
+        layout.addView(risk);
+
         fragmentView = root;
         return fragmentView;
     }
@@ -152,12 +144,6 @@ public class TelezhkaSettingsActivity extends BaseFragment {
     @Override
     public boolean isLightStatusBar() {
         return false;
-    }
-
-    private void updateGhostOptions() {
-        if (ghostOptions != null) {
-            ghostOptions.setVisibility(TelezhkaPrivacy.ghostEnabled() ? View.VISIBLE : View.GONE);
-        }
     }
 
     private void changePin() {
@@ -196,7 +182,7 @@ public class TelezhkaSettingsActivity extends BaseFragment {
         showDialog(popup);
     }
 
-    private LinearLayout switchRow(Context context, int icon, int color, String title, String info, String key, Runnable onChange) {
+    private LinearLayout switchRow(Context context, int icon, int color, String title, String info, String key, boolean risky) {
         Switch sw = new Switch(context);
         sw.setChecked(TelezhkaPrivacy.getRaw(key), false);
         LinearLayout row = row(context, icon, color, title, info, sw);
@@ -205,37 +191,12 @@ public class TelezhkaSettingsActivity extends BaseFragment {
             Runnable apply = () -> {
                 TelezhkaPrivacy.set(key, now);
                 sw.setChecked(now, true);
-                if (onChange != null) {
-                    onChange.run();
-                }
             };
-            if (now) {
+            if (now && risky) {
                 confirmRisk(apply);
             } else {
                 apply.run();
             }
-        });
-        return row;
-    }
-
-    private LinearLayout subRow(Context context, String title, String key) {
-        Switch sw = new Switch(context);
-        sw.setChecked(TelezhkaPrivacy.getRaw(key), false);
-        LinearLayout row = new LinearLayout(context);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(16), dp(6), dp(16), dp(6));
-        row.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(14), 0, 0x0FFFFFFF));
-        TextView text = new TextView(context);
-        text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        text.setTextColor(0xFFC9CDD6);
-        text.setText(title);
-        row.addView(text, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 12, 0));
-        row.addView(sw, LayoutHelper.createLinear(37, 40));
-        row.setOnClickListener(v -> {
-            boolean now = !TelezhkaPrivacy.getRaw(key);
-            TelezhkaPrivacy.set(key, now);
-            sw.setChecked(now, true);
         });
         return row;
     }

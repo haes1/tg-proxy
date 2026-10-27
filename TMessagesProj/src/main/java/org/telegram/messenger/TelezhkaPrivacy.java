@@ -16,18 +16,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 /**
- * "Настройки Тележки → Приватность": ghost mode, keeping messages the other side deleted
- * (and old versions of edited ones), and saving where saving is forbidden.
- * Everything is off until the user turns it on.
+ * "Настройки Тележки": keeping messages the other side deleted (and old versions of edited ones)
+ * and saving where saving is forbidden. Both are off until the user turns them on.
  */
 public class TelezhkaPrivacy {
 
     private static final String PREFS = "telezhka_privacy";
-    public static final String GHOST = "ghost";
-    public static final String GHOST_READ = "ghost_read";
-    public static final String GHOST_ONLINE = "ghost_online";
-    public static final String GHOST_TYPING = "ghost_typing";
-    public static final String GHOST_STORIES = "ghost_stories";
     public static final String KEEP_DELETED = "keep_deleted";
     public static final String SAVE_ALL = "save_all";
 
@@ -35,7 +29,7 @@ public class TelezhkaPrivacy {
     private static final int MAX_VERSIONS = 10;
 
     private static SharedPreferences prefs;
-    private static Boolean ghost, ghostRead, ghostOnline, ghostTyping, ghostStories, keepDeleted, saveAll;
+    private static Boolean keepDeleted, saveAll;
     @SuppressWarnings("unchecked")
     private static final HashSet<String>[] deleted = new HashSet[UserConfig.MAX_ACCOUNT_COUNT];
 
@@ -50,51 +44,13 @@ public class TelezhkaPrivacy {
         return prefs().getBoolean(key, def);
     }
 
-    // raw value of a switch for the settings screen (ghost sub-options default to on)
     public static boolean getRaw(String key) {
-        return get(key, key.equals(GHOST_READ) || key.equals(GHOST_ONLINE) || key.equals(GHOST_TYPING) || key.equals(GHOST_STORIES));
+        return get(key, false);
     }
 
     public static void set(String key, boolean value) {
         prefs().edit().putBoolean(key, value).apply();
-        ghost = ghostRead = ghostOnline = ghostTyping = ghostStories = keepDeleted = saveAll = null;
-    }
-
-    // Ghost mode: the master switch plus what it hides (all four on by default once it is enabled)
-
-    public static boolean ghostEnabled() {
-        if (ghost == null) {
-            ghost = get(GHOST, false);
-        }
-        return ghost;
-    }
-
-    public static boolean hideRead() {
-        if (ghostRead == null) {
-            ghostRead = get(GHOST_READ, true);
-        }
-        return ghostEnabled() && ghostRead;
-    }
-
-    public static boolean hideOnline() {
-        if (ghostOnline == null) {
-            ghostOnline = get(GHOST_ONLINE, true);
-        }
-        return ghostEnabled() && ghostOnline;
-    }
-
-    public static boolean hideTyping() {
-        if (ghostTyping == null) {
-            ghostTyping = get(GHOST_TYPING, true);
-        }
-        return ghostEnabled() && ghostTyping;
-    }
-
-    public static boolean hideStoryViews() {
-        if (ghostStories == null) {
-            ghostStories = get(GHOST_STORIES, true);
-        }
-        return ghostEnabled() && ghostStories;
+        keepDeleted = saveAll = null;
     }
 
     public static boolean keepDeleted() {
