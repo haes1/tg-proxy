@@ -128,6 +128,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Components.ProxyPingPillDrawable;
 import org.telegram.messenger.TelezhkaHiddenChats;
 import org.telegram.messenger.TelezhkaPingMonitor;
+import org.telegram.messenger.TelezhkaPrivacy;
 import org.telegram.messenger.TelezhkaUpdater;
 import org.telegram.ui.Components.TelezhkaPopup;
 import org.telegram.messenger.UserConfig;
@@ -6052,6 +6053,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 false,
                 true
             );
+        } else if (folderId == 0 && communityId == 0 && !onlySelect && TelezhkaPrivacy.ghostEnabled()) {
+            // Telezhka: a reminder while ghost mode is on; the cross turns it off
+            dialogsHintCellVisible = true;
+            dialogsHintCell.setOnClickListener(v -> presentFragment(new TelezhkaSettingsActivity()));
+            dialogsHintCell.setText(getString(R.string.TelezhkaGhostHintTitle), getString(R.string.TelezhkaGhostHintText));
+            dialogsHintCell.setOnCloseListener(v -> {
+                TelezhkaPrivacy.set(TelezhkaPrivacy.GHOST, false);
+                updateDialogsHint();
+                BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, getString(R.string.TelezhkaGhostOff)).show();
+            });
         } else if (folderId == 0 && communityId == 0 && getMessagesController().pendingSuggestions.contains("SETUP_PASSKEY")) {
             dialogsHintCellVisible = true;
             dialogsHintCell.setOnClickListener(v -> {
@@ -7139,6 +7150,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 AndroidUtilities.runOnUIThread(() -> BulletinFactory.of(this).createSimpleBulletin(R.raw.info, getString(R.string.TelezhkaHiddenNotice)).show(), 450);
             }
         } else if (folderId == 0 && communityId == 0 && !onlySelect && initialDialogsType == DIALOGS_TYPE_DEFAULT) {
+            updateDialogsHint();  // ghost-mode reminder may have changed in Telezhka settings
             if (TelezhkaHiddenChats.applyResetIfDue()) {
                 AndroidUtilities.runOnUIThread(() -> BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, getString(R.string.TelezhkaPinResetDone)).show(), 450);
             }

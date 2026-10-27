@@ -128,6 +128,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TelezhkaPrivacy;
 import org.telegram.messenger.RichMessageLayout;
 import org.telegram.messenger.RichQuote;
 import org.telegram.messenger.SendMessagesHelper;
@@ -18519,6 +18520,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
         if (currentMessageObject.messageOwner.video_processing_pending) {
             timeString = formatString(R.string.ScheduledTimeApprox, timeString);
+        }
+        if (TelezhkaPrivacy.isDeleted(currentAccount, currentMessageObject)) {
+            timeString = getString(R.string.TelezhkaDeletedMark) + " " + timeString;  // Telezhka: the other side deleted it
         }
         if (signString != null) {
             if (messageObject.messageOwner.via_business_bot_id != 0) {

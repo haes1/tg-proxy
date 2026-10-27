@@ -77,21 +77,45 @@ public class TelezhkaUpdater {
         if (shownThisLaunch || lastCheck != 0 && now - lastCheck < CHECK_PERIOD_MS) {
             return;
         }
+        fetchAndShow(fragment, false, null);
+    }
+
+    /** "Проверить обновления" in Telezhka settings: asks now, shows the popup even for a build skipped with «Позже». */
+    public static void checkNow(BaseFragment fragment, Utilities.Callback<Boolean> done) {
+        if (checking) {
+            return;
+        }
+        shownThisLaunch = false;
+        fetchAndShow(fragment, true, done);
+    }
+
+    private static void fetchAndShow(BaseFragment fragment, boolean manual, Utilities.Callback<Boolean> done) {
         checking = true;
         Utilities.globalQueue.postRunnable(() -> {
             Release release = fetch();
             AndroidUtilities.runOnUIThread(() -> {
                 checking = false;
                 if (release == null) {
+                    if (done != null) {
+                        done.run(null);
+                    }
                     return;
                 }
                 lastCheck = android.os.SystemClock.elapsedRealtime();
-                if (release.build > BuildVars.TELEZHKA_BUILD && release.build != prefs().getInt(KEY_SKIPPED, 0)) {
+                boolean newer = BuildVars.TELEZHKA_BUILD > 0 && release.build > BuildVars.TELEZHKA_BUILD;
+                if (newer && (manual || release.build != prefs().getInt(KEY_SKIPPED, 0))) {
                     pending = release;
                     show(fragment, release);
                 }
+                if (done != null) {
+                    done.run(newer);
+                }
             });
         });
+    }
+
+    public static int latestKnownBuild() {
+        return pending != null ? pending.build : 0;
     }
 
     private static Release fetch() {

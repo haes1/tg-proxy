@@ -7854,7 +7854,7 @@ public class MessagesStorage extends BaseController {
         return ref.get();
     }
 
-    private TLRPC.Message getMessageInternal(long dialogId, long msgId) {
+    TLRPC.Message getMessageInternal(long dialogId, long msgId) {  // Telezhka: package access for edit history
         SQLiteCursor cursor = null;
         TLRPC.Message result = null;
         try {

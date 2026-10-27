@@ -1868,6 +1868,9 @@ public class MessageObject {
         localUserName = userName;
         messageText = formattedMessage;
         messageOwner = message;
+        if (message != null && message.noforwards && TelezhkaPrivacy.saveAll()) {
+            message.noforwards = false;
+        }
         localChannel = isChannel;
         localSupergroup = supergroup;
         localEdit = edit;
@@ -1923,6 +1926,9 @@ public class MessageObject {
 
         currentAccount = accountNum;
         messageOwner = message;
+        if (message != null && message.noforwards && TelezhkaPrivacy.saveAll()) {
+            message.noforwards = false;  // Telezhka "Скачивать всё": allow saving and copying
+        }
         replyMessageObject = replyToMessage;
         eventId = eid;
         wasUnread = !messageOwner.out && messageOwner.unread;

@@ -6690,7 +6690,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isChatNoForwards(TLRPC.Chat chat) {
-        if (chat == null) {
+        if (chat == null || TelezhkaPrivacy.saveAll()) {
             return false;
         }
         if (chat.migrated_to != null) {
@@ -6715,7 +6715,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isUserNoForwards(TLRPC.UserFull userFull) {
-        if (userFull == null) {
+        if (userFull == null || TelezhkaPrivacy.saveAll()) {
             return false;
         }
 
@@ -10535,7 +10535,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         }
 
                         TL_account.updateStatus req = new TL_account.updateStatus();
-                        req.offline = false;
+                        req.offline = TelezhkaPrivacy.hideOnline();  // Telezhka ghost mode: stay "last seen recently"
                         statusRequest = getConnectionsManager().sendRequest(req, (response, error) -> {
                             if (error == null) {
                                 lastStatusUpdateTime = System.currentTimeMillis();
@@ -11388,7 +11388,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean sendTyping(long dialogId, long threadMsgId, int action, String emojicon, int classGuid) {
-        if (action < 0 || action >= sendingTypings.length || dialogId == 0) {
+        if (action < 0 || action >= sendingTypings.length || dialogId == 0 || TelezhkaPrivacy.hideTyping()) {
             return false;
         }
         final long selfId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
@@ -14417,6 +14417,9 @@ public class MessagesController extends BaseController implements NotificationCe
         long dialogId = messageObject.getDialogId();
         getMessagesStorage().markMessagesContentAsRead(dialogId, arrayList, 0, 0);
         getNotificationCenter().postNotificationName(NotificationCenter.messagesReadContent, dialogId, arrayList);
+        if (TelezhkaPrivacy.hideRead()) {
+            return;  // Telezhka ghost mode: a listened voice message stays "not listened" for the sender
+        }
         if (messageObject.getId() < 0) {
             markMessageAsRead(messageObject.getDialogId(), messageObject.messageOwner.random_id, Integer.MIN_VALUE);
         } else {
@@ -14569,6 +14572,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     private void completeReadTask(ReadTask task) {
+        if (TelezhkaPrivacy.hideRead()) {
+            return;  // Telezhka ghost mode: read locally, the other side does not see it
+        }
         if (task.replyId != 0 && task.monoForumPeerId == 0) {
             TLRPC.TL_messages_readDiscussion req = new TLRPC.TL_messages_readDiscussion();
             req.msg_id = (int) task.replyId;
@@ -19880,6 +19886,22 @@ public class MessagesController extends BaseController implements NotificationCe
 
 
         if (editingMessages != null) {
+            if (TelezhkaPrivacy.keepDeleted()) {
+                // Telezhka: remember the text before the edit; runs on the storage queue before the edit is written
+                for (int b = 0, size = editingMessages.size(); b < size; b++) {
+                    final long did = editingMessages.keyAt(b);
+                    for (MessageObject edited : editingMessages.valueAt(b)) {
+                        final int mid = edited.getId();
+                        final String newText = edited.messageOwner.message;
+                        getMessagesStorage().getStorageQueue().postRunnable(() -> {
+                            TLRPC.Message old = getMessagesStorage().getMessageInternal(did, mid);
+                            if (old != null && old.message != null && !old.message.equals(newText)) {
+                                TelezhkaPrivacy.addVersion(currentAccount, did, mid, old.message, old.edit_date != 0 ? old.edit_date : old.date);
+                            }
+                        });
+                    }
+                }
+            }
             for (int b = 0, size = editingMessages.size(); b < size; b++) {
                 TLRPC.TL_messages_messages messagesRes = new TLRPC.TL_messages_messages();
                 ArrayList<MessageObject> messageObjects = editingMessages.valueAt(b);
@@ -21073,6 +21095,15 @@ public class MessagesController extends BaseController implements NotificationCe
         LongSparseIntArray markAsReadMessagesOutboxFinal = markAsReadMessagesOutbox;
         LongSparseArray<ArrayList<Integer>> markContentAsReadMessagesFinal = markContentAsReadMessages;
         SparseIntArray markAsReadEncryptedFinal = markAsReadEncrypted;
+        if (deletedMessages != null && TelezhkaPrivacy.keepDeleted()) {
+            // Telezhka: messages the other side deleted stay in the chat, marked "удалено"
+            for (int a = 0, size = deletedMessages.size(); a < size; a++) {
+                TelezhkaPrivacy.markDeleted(currentAccount, deletedMessages.keyAt(a), deletedMessages.valueAt(a));
+            }
+            final LongSparseArray<ArrayList<Integer>> kept = deletedMessages;
+            AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.telezhkaMessagesMarkedDeleted, kept));
+            deletedMessages = null;
+        }
         LongSparseArray<ArrayList<Integer>> deletedMessagesFinal = deletedMessages;
         LongSparseArray<ArrayList<Integer>> deletedQuickRepliesMessagesFinal = deletedQuickReplyMessages;
         LongSparseArray<ArrayList<Integer>> scheduledDeletedMessagesFinal = scheduledDeletedMessages;

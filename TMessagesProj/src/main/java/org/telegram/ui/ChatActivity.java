@@ -179,6 +179,8 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
+import org.telegram.ui.Components.TelezhkaPopup;
+import org.telegram.messenger.TelezhkaPrivacy;
 import org.telegram.messenger.RichMessageLayout;
 import org.telegram.messenger.RichQuote;
 import org.telegram.messenger.SecretChatHelper;
@@ -1264,6 +1266,8 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_VIEW_STATISTICS = 115;
     public final static int OPTION_WELCOME_REVERT = 116;
     public final static int OPTION_SEND_MONEY = 117;
+    public final static int OPTION_TELEZHKA_HISTORY = 1500;
+    public final static int OPTION_TELEZHKA_SAVE_ROUND = 1501;
 
     private final static int[] allowedNotificationsDuringChatListAnimations = new int[]{
             NotificationCenter.messagesRead,
@@ -2974,6 +2978,7 @@ public class ChatActivity extends BaseFragment implements
             .add(NotificationCenter.didLoadSendAsPeers)
             .add(NotificationCenter.closeChatActivity)
             .add(NotificationCenter.messagesDeleted)
+            .add(NotificationCenter.telezhkaMessagesMarkedDeleted)
             .add(NotificationCenter.historyCleared)
             .add(NotificationCenter.messageReceivedByServer)
             .add(NotificationCenter.messageReceivedByAck)
@@ -22554,6 +22559,15 @@ public class ChatActivity extends BaseFragment implements
             if (updated && chatAdapter != null) {
                 chatAdapter.notifyDataSetChanged(false);
             }
+        } else if (id == NotificationCenter.telezhkaMessagesMarkedDeleted) {
+            // Telezhka: messages deleted by the other side stay and get the "удалено" mark
+            for (int a = 0; a < messages.size(); a++) {
+                MessageObject m = messages.get(a);
+                if (TelezhkaPrivacy.isDeleted(currentAccount, m)) {
+                    m.forceUpdate = true;
+                }
+            }
+            updateVisibleRows();
         } else if (id == NotificationCenter.messagesDeleted) {
             boolean scheduled = (Boolean) args[2];
             if (scheduled != (chatMode == MODE_SCHEDULED)) {
@@ -33665,6 +33679,14 @@ public class ChatActivity extends BaseFragment implements
                 DialogsActivity fragment = new DialogsActivity(args);
                 fragment.setDelegate(this);
                 presentFragment(fragment);
+                break;
+            }
+            case OPTION_TELEZHKA_HISTORY: {
+                showTelezhkaEditHistory(selectedObject);
+                break;
+            }
+            case OPTION_TELEZHKA_SAVE_ROUND: {
+                saveTelezhkaRound(selectedObject);
                 break;
             }
             case OPTION_COPY: {
@@ -46738,6 +46760,49 @@ public class ChatActivity extends BaseFragment implements
             options.add(OPTION_WELCOME_REVERT);
             icons.add(R.drawable.outline_revert_24);
         }
+
+        // Telezhka: old versions of an edited message, and round videos to the gallery
+        if (message != null && TelezhkaPrivacy.hasVersions(currentAccount, message.getDialogId(), message.getId())) {
+            items.add(getString(R.string.TelezhkaEditHistory));
+            options.add(OPTION_TELEZHKA_HISTORY);
+            icons.add(R.drawable.msg_edit);
+        }
+        if (message != null && TelezhkaPrivacy.saveAll() && message.isRoundVideo() && !message.isRoundOnce()) {
+            items.add(getString(R.string.TelezhkaSaveRound));
+            options.add(OPTION_TELEZHKA_SAVE_ROUND);
+            icons.add(R.drawable.msg_gallery);
+        }
+    }
+
+    private void showTelezhkaEditHistory(MessageObject message) {
+        if (message == null || getParentActivity() == null) {
+            return;
+        }
+        ArrayList<String[]> versions = TelezhkaPrivacy.getVersions(currentAccount, message.getDialogId(), message.getId());
+        TelezhkaPopup popup = new TelezhkaPopup(getParentActivity());
+        popup.setIcon(R.drawable.msg_edit).setTitleText(getString(R.string.TelezhkaEditHistory));
+        for (String[] version : versions) {
+            long date = Long.parseLong(version[1]) * 1000L;
+            popup.addDotItem("**" + LocaleController.getInstance().getFormatterDay().format(date) + "** " + version[0]);
+        }
+        if (message.messageOwner != null && !TextUtils.isEmpty(message.messageOwner.message)) {
+            popup.addDotItem("**" + getString(R.string.TelezhkaEditNow) + "** " + message.messageOwner.message);
+        }
+        popup.setMainButton(getString(R.string.OK), v -> popup.dismiss());
+        showDialog(popup);
+    }
+
+    private void saveTelezhkaRound(MessageObject message) {
+        File file = message != null ? FileLoader.getInstance(currentAccount).getPathToMessage(message.messageOwner) : null;
+        if (file == null || !file.exists()) {
+            BulletinFactory.of(this).createErrorBulletin(getString(R.string.TelezhkaSaveRoundFirst)).show();
+            return;
+        }
+        MediaController.saveFile(file.toString(), getParentActivity(), 1, null, null, uri -> {
+            if (getParentActivity() != null) {
+                BulletinFactory.of(this).createDownloadBulletin(BulletinFactory.FileType.VIDEO, themeDelegate).show();
+            }
+        });
     }
 
     private boolean showWelcomeMessageRevertOption(MessageObject messageObject) {
