@@ -81,7 +81,7 @@ public class TelezhkaChannelSheet extends Dialog {
     private boolean finished;
     private int subscribers;
 
-    public TelezhkaChannelSheet(Context context, int subscribers, ArrayList<TLRPC.Message> posts) {
+    public TelezhkaChannelSheet(Context context, String channelTitle, int subscribers, ArrayList<TLRPC.Message> posts) {
         super(context);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         this.subscribers = subscribers;
@@ -93,6 +93,7 @@ public class TelezhkaChannelSheet extends Dialog {
         sheet.setOrientation(LinearLayout.VERTICAL);
         sheet.setBackground(Theme.createRoundRectDrawable(dp(34), PANEL));
         sheet.setClipToOutline(true);
+        sheet.setClipChildren(false);
         sheet.setClickable(true);
         root.addView(sheet, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 10, 0, 10, 10));
 
@@ -103,8 +104,10 @@ public class TelezhkaChannelSheet extends Dialog {
         feed.setOrientation(LinearLayout.VERTICAL);
         int[][] tints = {{SIGNAL, 0x29FF6B3D}, {OK, 0x243DDC97}, {0xFF9B8CFF, 0x299B8CFF}};
         int[] shifts = {0, 18, 6};
-        for (int i = 0; i < posts.size(); i++) {
-            View card = card(context, posts.get(i), tints[i % 3]);
+        int count = posts.isEmpty() ? 3 : posts.size();
+        for (int i = 0; i < count; i++) {
+            // the channel's last posts; while it has none, three things Telezhka can do
+            View card = posts.isEmpty() ? featureCard(context, i, tints[i]) : card(context, posts.get(i), tints[i % 3]);
             cards.add(card);
             feed.addView(card, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, shifts[i % 3], i == 0 ? 0 : 10, i == 1 ? -6 : (i == 2 ? 10 : 0), 0));
         }
@@ -116,11 +119,13 @@ public class TelezhkaChannelSheet extends Dialog {
         x.setBackground(Theme.createSimpleSelectorCircleDrawable(dp(34), 0x14FFFFFF, 0x29FFFFFF));
         x.setOnClickListener(v -> close(Result.LATER));
         sky.addView(x, LayoutHelper.createFrame(34, 34, Gravity.TOP | Gravity.RIGHT, 0, 14, 14, 0));
-        sheet.addView(sky, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, posts.isEmpty() ? 170 : 92 + 62 * posts.size()));
+        sheet.addView(sky, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 92 + 62 * count));
 
         LinearLayout body = new LinearLayout(context);
         body.setOrientation(LinearLayout.VERTICAL);
         body.setPadding(dp(24), 0, dp(24), dp(20));
+        body.setClipChildren(false);
+        body.setClipToPadding(false);
         sheet.addView(body);
 
         // Channel row: the logo overlaps the sky
@@ -147,7 +152,9 @@ public class TelezhkaChannelSheet extends Dialog {
         LinearLayout meta = new LinearLayout(context);
         meta.setOrientation(LinearLayout.VERTICAL);
         TextView name = new TextView(context);
-        name.setText(getString(R.string.TelezhkaChannelName));
+        name.setText(TextUtils.isEmpty(channelTitle) ? getString(R.string.TelezhkaChannelName) : channelTitle);
+        name.setSingleLine(true);
+        name.setEllipsize(TextUtils.TruncateAt.END);
         name.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         name.setTypeface(AndroidUtilities.bold());
         name.setTextColor(TEXT);
@@ -161,7 +168,7 @@ public class TelezhkaChannelSheet extends Dialog {
         updateCount();
         countRow.addView(countView);
         meta.addView(countRow, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 6));
-        chan.addView(meta);
+        chan.addView(meta, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
         body.addView(chan, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, -34, 0, 0));
 
         TextView title = new TextView(context);
@@ -282,7 +289,26 @@ public class TelezhkaChannelSheet extends Dialog {
         }
     }
 
+    private View featureCard(Context context, int index, int[] tint) {
+        int[] titles = {R.string.TelezhkaChannelFeature1, R.string.TelezhkaChannelFeature2, R.string.TelezhkaChannelFeature3};
+        int[] subtitles = {R.string.TelezhkaChannelFeature1Info, R.string.TelezhkaChannelFeature2Info, R.string.TelezhkaChannelFeature3Info};
+        return card(context, getString(titles[index]), getString(subtitles[index]), null, tint);
+    }
+
     private View card(Context context, TLRPC.Message post, int[] tint) {
+        String text = post.message != null ? post.message.trim() : "";
+        String head, tail = "";
+        if (TextUtils.isEmpty(text)) {
+            head = getString(post.media instanceof TLRPC.TL_messageMediaPhoto ? R.string.AttachPhoto : post.media instanceof TLRPC.TL_messageMediaDocument ? R.string.AttachDocument : R.string.TelezhkaChannelPost);
+        } else {
+            String[] lines = text.split("\n", 3);
+            head = lines[0];
+            tail = lines.length > 1 ? lines[1] : "";
+        }
+        return card(context, head, tail, LocaleController.stringForMessageListDate(post.date), tint);
+    }
+
+    private View card(Context context, String head, String tail, String dateText, int[] tint) {
         LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.HORIZONTAL);
         card.setGravity(Gravity.CENTER_VERTICAL);
@@ -301,15 +327,6 @@ public class TelezhkaChannelSheet extends Dialog {
         card.addView(tile, LayoutHelper.createLinear(34, 34, 0, 0, 11, 0));
         LinearLayout texts = new LinearLayout(context);
         texts.setOrientation(LinearLayout.VERTICAL);
-        String text = post.message != null ? post.message.trim() : "";
-        String head, tail = "";
-        if (TextUtils.isEmpty(text)) {
-            head = getString(post.media instanceof TLRPC.TL_messageMediaPhoto ? R.string.AttachPhoto : post.media instanceof TLRPC.TL_messageMediaDocument ? R.string.AttachDocument : R.string.TelezhkaChannelPost);
-        } else {
-            String[] lines = text.split("\n", 3);
-            head = lines[0];
-            tail = lines.length > 1 ? lines[1] : "";
-        }
         TextView t = new TextView(context);
         t.setText(head);
         t.setSingleLine(true);
@@ -328,11 +345,13 @@ public class TelezhkaChannelSheet extends Dialog {
             texts.addView(s, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 1, 0, 0));
         }
         card.addView(texts, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
-        TextView date = new TextView(context);
-        date.setText(LocaleController.stringForMessageListDate(post.date));
-        date.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
-        date.setTextColor(MUTE);
-        card.addView(date, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 8, 0, 0, 0));
+        if (dateText != null) {
+            TextView date = new TextView(context);
+            date.setText(dateText);
+            date.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+            date.setTextColor(MUTE);
+            card.addView(date, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 8, 0, 0, 0));
+        }
         return card;
     }
 

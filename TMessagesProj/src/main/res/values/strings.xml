@@ -11799,4 +11799,10 @@
     <string name="TelezhkaChannelLaterDone">Напомним через неделю</string>
     <string name="TelezhkaSectionNews">Новости</string>
     <string name="TelezhkaNewsRow">Канал Тележки</string>
+    <string name="TelezhkaChannelFeature1">Голосовые в текст</string>
+    <string name="TelezhkaChannelFeature1Info">Бесплатно, без Premium</string>
+    <string name="TelezhkaChannelFeature2">Связь сама находит прокси</string>
+    <string name="TelezhkaChannelFeature2Info">Список обновляется каждые полчаса</string>
+    <string name="TelezhkaChannelFeature3">Удалённые не пропадают</string>
+    <string name="TelezhkaChannelFeature3Info">Включается в настройках Тележки</string>
 </resources>

@@ -126,7 +126,7 @@ public class TelezhkaChannelPromo {
     }
 
     private static void show(BaseFragment fragment, int account, TLRPC.Chat chat, int subscribers, ArrayList<TLRPC.Message> posts) {
-        TelezhkaChannelSheet sheet = new TelezhkaChannelSheet(fragment.getParentActivity(), subscribers, posts);
+        TelezhkaChannelSheet sheet = new TelezhkaChannelSheet(fragment.getParentActivity(), chat.title, subscribers, posts);
         sheet.setOnSubscribe(() -> {
             prefs().edit().putBoolean("never", true).apply();
             MessagesController.getInstance(account).addUserToChat(chat.id, UserConfig.getInstance(account).getCurrentUser(), 0, null, fragment, true, null, err -> true);
