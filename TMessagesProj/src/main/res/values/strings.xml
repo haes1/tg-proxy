@@ -11753,6 +11753,7 @@
     <string name="TelezhkaUpdateFailed">Не получилось скачать обновление. Проверьте интернет и попробуйте ещё раз.</string>
     <string name="TelezhkaUpdateAllow">Разрешите Тележке устанавливать приложения, затем нажмите «Установить» ещё раз</string>
     <string name="TelezhkaSettingsTitle">Настройки Тележки</string>
+    <string name="TelezhkaSettingsInfo">Невидимка, удалённые, скачивание, скрытые чаты, прокси</string>
     <string name="TelezhkaSectionPrivacy">Приватность</string>
     <string name="TelezhkaSectionConnection">Подключение</string>
     <string name="TelezhkaSectionUpdates">Обновления</string>
