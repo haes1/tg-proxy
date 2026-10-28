@@ -1,46 +1,32 @@
-## Telegram messenger for Android
+# Тележка 🛒
 
-[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+Неофициальный клиент Telegram для Android. Сама находит рабочее подключение, когда Telegram плохо грузится, а ещё умеет то, чего нет в обычном приложении.
 
-## Creating your Telegram Application
+**[⬇️ Скачать последнюю версию](https://github.com/telesga/tg-proxy/releases/latest)** · новости в канале [@teleskaoff](https://t.me/teleskaoff)
 
-We welcome all developers to use our API and source code to create applications on our platform.
-There are several things we require from **all developers** for the moment.
+## Что умеет
 
-1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
-2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
-3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
-3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
-4. Please remember to publish **your** code too in order to comply with the licences.
+- **Автоподбор прокси.** Тележка сама проверяет прокси, включает самый быстрый и переключается, если он перестал работать. Список обновляется каждые 30 минут.
+- **Скрытые чаты.** Любой чат можно спрятать из списка под PIN-код.
+- **Удалённые сообщения остаются.** Если собеседник удалил сообщение, у вас оно сохранится.
+- **Голосовые в текст.** Бесплатная расшифровка голосовых сообщений (голосовое для этого отправляется на сервер Тележки).
+- **Музыка.** Поиск треков, любимые треки и популярное прямо в приложении.
+- **Обновления внутри приложения.** Когда выходит новая версия, Тележка сама предложит её поставить.
 
-### API, Protocol documentation
+## Как установить
 
-Telegram API manuals: https://core.telegram.org/api
+1. Откройте [страницу последней версии](https://github.com/telesga/tg-proxy/releases/latest) с телефона.
+2. Скачайте файл `.apk` и откройте его.
+3. Если Android спросит, разрешите установку из этого источника.
 
-MTproto protocol manuals: https://core.telegram.org/mtproto
+Нужен Android на 64-битном процессоре (почти все телефоны последних лет).
 
-### Compilation Guide
+## Важно
 
-**Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
+Тележка — неофициальное приложение, она не связана с Telegram. Аккаунт и переписка работают через обычные серверы Telegram.
 
-You will require Android Studio 2025.1.4, Android NDK 27.2.12479018 and Android SDK 36.
+---
 
-1. Clone the Telegram source code with its submodules:
-   ```bash
-   git clone --recursive --shallow-submodules https://github.com/DrKLO/Telegram.git Telegram
-   ```
-   In case you forgot the `--recursive` flag, change to the `Telegram` directory and run:
-   ```bash
-   git submodule init && git submodule update --init --recursive --depth=1
-   ```
-2. Copy your release.keystore into TMessagesProj/config
-3. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your  release.keystore
-4.  Go to https://console.firebase.google.com/, create two android apps with application IDs org.telegram.messenger and org.telegram.messenger.beta, turn on firebase messaging and download google-services.json, which should be copied to the same folder as TMessagesProj.
-5. Open the project in the Studio (note that it should be opened, NOT imported).
-6. Fill out values in TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java – there’s a link for each of the variables showing where and which data to obtain.
-7. You are ready to compile Telegram.
+### Для разработчиков
 
-### Localization
-
-We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+Тележка собрана на основе [официального исходного кода Telegram для Android](https://github.com/DrKLO/Telegram) и распространяется под той же лицензией GPL v2 (см. [LICENSE](LICENSE)). APK собирает GitHub Actions при каждом коммите в `main` и выкладывает в Releases. Для своей сборки нужны собственные `api_id`/`api_hash` с [my.telegram.org](https://my.telegram.org) — в репозитории они берутся из секретов `TELEGRAM_API_ID` и `TELEGRAM_API_HASH`.
