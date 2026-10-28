@@ -1,10 +1,10 @@
 [
+  {"server": "redflag.yazaebalsyadelatproxy.co.uk", "port": 443, "secret": "ee69e899d89ec68e220ca177557322b27f726564666c61672e79617a616562616c73796164656c617470726f78792e6363"},
+  {"server": "redflag.yazaebalsyadelatproxy.uk", "port": 443, "secret": "ee69e899d89ec68e220ca177557322b27f726564666c61672e79617a616562616c73796164656c617470726f78792e6363"},
+  {"server": "pub.ultra-fast.cc", "port": 443, "secret": "ee5f07ed802882bdee7a7c46e5239b15c47075622e756c7472612d666173742e6363"},
   {"server": "surf.suslik-cloud.com", "port": 443, "secret": "eed7f61466f824eafe116a533553e01bca737572662e7375736c696b2d636c6f75642e636f6d"},
   {"server": "as.mkim.click", "port": 443, "secret": "ee2dfa3526fc70b7abd7a09eade6ccea1f61732e6d6b696d2e636c69636b"},
   {"server": "max.kimt.click", "port": 443, "secret": "ee1b153cf06dbd43c6085c359a6702eb936d61782e6b696d742e636c69636b"},
-  {"server": "pub.ultra-fast.cc", "port": 443, "secret": "ee5f07ed802882bdee7a7c46e5239b15c47075622e756c7472612d666173742e6363"},
-  {"server": "redflag.yazaebalsyadelatproxy.uk", "port": 443, "secret": "ee69e899d89ec68e220ca177557322b27f726564666c61672e79617a616562616c73796164656c617470726f78792e6363"},
-  {"server": "redflag.yazaebalsyadelatproxy.co.uk", "port": 443, "secret": "ee69e899d89ec68e220ca177557322b27f726564666c61672e79617a616562616c73796164656c617470726f78792e6363"},
   {"server": "shared.ddproxy.xyz", "port": 443, "secret": "eedddddddddddddddddddddddddddddddd6d2e6265626f6f2e7275"},
   {"server": "chestno.servera-dlya-tg-zdes-net.abrdns.com", "port": 443, "secret": "eea65c7fc5a0d5669ba371a7ca88fc19496f7a6f6e2e7275"},
   {"server": "static.antenna-mzt.live", "port": 443, "secret": "ee5a42e3752e724f2fdae9c117e7f076fe73746f72652e737465616d706f77657265642e636f6d"},
@@ -30,7 +30,5 @@
   {"server": "cameo-crimson.velvetoak.work", "port": 443, "secret": "ee56cd3af2edbf57dcd353d3923be3adba63616d656f2d6372696d736f6e2e76656c7665746f616b2e776f726b"},
   {"server": "cameo-crimson.driftquill.click", "port": 443, "secret": "ee56cd3af2edbf57dcd353d3923be3adba63616d656f2d6372696d736f6e2e64726966747175696c6c2e636c69636b"},
   {"server": "cascade-shell.velvetoak.work", "port": 443, "secret": "eeacd5376351a5d15d667238ecc64112ff636173636164652d7368656c6c2e76656c7665746f616b2e776f726b"},
-  {"server": "cascade-shell.driftquill.click", "port": 443, "secret": "eeacd5376351a5d15d667238ecc64112ff636173636164652d7368656c6c2e64726966747175696c6c2e636c69636b"},
-  {"server": "cloud-lemon.velvetoak.work", "port": 443, "secret": "ee7bc3f3b1ac1066578b6793b60dff704b636c6f75642d6c656d6f6e2e76656c7665746f616b2e776f726b"},
-  {"server": "cloud-lemon.driftquill.click", "port": 443, "secret": "ee7bc3f3b1ac1066578b6793b60dff704b636c6f75642d6c656d6f6e2e64726966747175696c6c2e636c69636b"}
+  {"server": "cascade-shell.driftquill.click", "port": 443, "secret": "eeacd5376351a5d15d667238ecc64112ff636173636164652d7368656c6c2e64726966747175696c6c2e636c69636b"}
 ]
