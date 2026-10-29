@@ -431,19 +431,8 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             for (int i = 0; i < accountNumbers.size(); ++i) {
                 items.add(SettingsActivity.AccountCell.Factory.of(i, accountNumbers.get(i)));
             }
-            if (!UserConfig.hasPremiumOnAccounts()) {
-                final int moreAccounts = Math.max(0, UserConfig.getMaxAccountCount() - UserConfig.getActivatedAccountsCount());
-                items.add(UItem.asShadow(
-                    TextUtils.concat(
-                        moreAccounts > 0 ? LocaleController.formatPluralStringComma("AddAccountInfo1", moreAccounts) + " " : "",
-                        replaceSingleTag(LocaleController.formatPluralStringComma("AddAccountInfo2", UserConfig.getMaxAccountCount()), () -> {
-                            presentFragment(new PremiumPreviewFragment("add_account"));
-                        })
-                    )
-                ));
-            } else {
-                items.add(UItem.asShadow(null));
-            }
+            // Тележка: 10 accounts for everyone, no Premium offer here
+            items.add(UItem.asShadow(LocaleController.formatString(R.string.TelezhkaAccountsInfo, UserConfig.MAX_ACCOUNT_COUNT)));
         }
         logoutRow = items.size();
         items.add(InfoCell.Factory.of(BUTTON_LOGOUT, R.drawable.msg_leave, getString(R.string.LogOut), null, 0).red());

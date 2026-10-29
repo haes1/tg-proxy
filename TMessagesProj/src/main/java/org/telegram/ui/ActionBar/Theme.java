@@ -76,6 +76,7 @@ import androidx.core.math.MathUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.telegram.messenger.TelezhkaAppearance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Bitmaps;
@@ -3994,7 +3995,8 @@ public class Theme {
 
         themeInfo = new ThemeInfo();
         themeInfo.name = "Night";
-        themeInfo.assetName = "telezhka.attheme";
+        // the colour variant chosen in "Оформление Тележки"
+        themeInfo.assetName = TelezhkaAppearance.themeAsset();
         themeInfo.previewBackgroundColor = 0xff535659;
         themeInfo.previewInColor = 0xff747A84;
         themeInfo.previewOutColor = 0xffFF6B3D;
@@ -8038,6 +8040,7 @@ public class Theme {
             chat_msgTextPaintTwoEmoji.setTextSize(dp(24 + 14));
             chat_msgTextPaintThreeEmoji.setTextSize(dp(20 + 10));
             chat_msgTextPaint.setTextSize(dp(SharedConfig.fontSize));
+            chat_msgTextPaint.setTypeface(TelezhkaAppearance.messageTypeface());
             chat_msgGameTextPaint.setTextSize(dp(14));
             chat_msgBotButtonPaint.setTextSize(dp(15));
             float smallerDp = (2 * SharedConfig.fontSize + 10) / 3f; // 6f + SharedConfig.fontSize / 2f;

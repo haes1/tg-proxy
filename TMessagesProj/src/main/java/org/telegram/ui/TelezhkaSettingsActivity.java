@@ -28,6 +28,11 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TelezhkaHiddenChats;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.messenger.TelezhkaPingMonitor;
+import org.telegram.messenger.TelezhkaAppearance;
+import org.telegram.messenger.TelezhkaAutoReply;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.TelezhkaPrivacy;
 import org.telegram.messenger.TelezhkaProxyAutopilot;
 import org.telegram.messenger.TelezhkaUpdater;
@@ -54,6 +59,12 @@ public class TelezhkaSettingsActivity extends BaseFragment {
     private static final int BAD = 0xFFFF5A5F;
     private static final int OK = 0xFF3DDC97;
     private static final String RISK_ACK = "telezhka_risk_ack";
+
+    private LinearLayout statusCard;
+    private View statusDot;
+    private TextView statusTitle, statusInfo;
+    private LinearLayout appearanceTile, hiddenTile, connectionTile, updatesTile, autoReplyRow;
+    private final TelezhkaPingMonitor.Listener pingListener = ping -> updateStatus();
 
     @Override
     public View createView(Context context) {
@@ -83,66 +94,79 @@ public class TelezhkaSettingsActivity extends BaseFragment {
         layout.setPadding(dp(16), 0, dp(16), dp(28));
         scrollView.addView(layout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
 
-        // Messages
-        layout.addView(header(context, getString(R.string.TelezhkaSectionMessages)));
-        LinearLayout messages = card(context);
-        messages.addView(switchRow(context, R.drawable.msg_delete, BAD, getString(R.string.TelezhkaKeepDeletedTitle), getString(R.string.TelezhkaKeepDeletedInfo), TelezhkaPrivacy.KEEP_DELETED, false));
-        layout.addView(messages);
+        // Status: is Telegram connected, and how
+        statusCard = new LinearLayout(context);
+        statusCard.setOrientation(LinearLayout.HORIZONTAL);
+        statusCard.setGravity(Gravity.CENTER_VERTICAL);
+        statusCard.setPadding(dp(16), dp(14), dp(14), dp(14));
+        statusCard.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(20), PANEL, 0xFF1D222C));
+        statusDot = new View(context);
+        statusCard.addView(statusDot, LayoutHelper.createLinear(10, 10, 0, 0, 14, 0));
+        LinearLayout statusTexts = new LinearLayout(context);
+        statusTexts.setOrientation(LinearLayout.VERTICAL);
+        statusTitle = new TextView(context);
+        statusTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        statusTitle.setTypeface(AndroidUtilities.bold());
+        statusTitle.setTextColor(TEXT);
+        statusTexts.addView(statusTitle);
+        statusInfo = new TextView(context);
+        statusInfo.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+        statusInfo.setTextColor(MUTE);
+        statusTexts.addView(statusInfo, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        statusCard.addView(statusTexts, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+        statusCard.addView(chevron(context), LayoutHelper.createLinear(20, 20));
+        statusCard.setOnClickListener(v -> presentFragment(new ProxyStatusActivity()));
+        layout.addView(statusCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
 
-        // Hidden chats
-        layout.addView(header(context, getString(R.string.TelezhkaHiddenTitle)));
-        LinearLayout hidden = card(context);
-        hidden.addView(linkRow(context, getString(R.string.TelezhkaChangePin), TelezhkaHiddenChats.hasPin() ? null : getString(R.string.TelezhkaNoPinYet), this::changePin));
-        hidden.addView(linkRow(context, getString(R.string.TelezhkaHowToOpenHidden), getString(R.string.TelezhkaHowToOpenHiddenInfo), null));
-        layout.addView(hidden);
-
-        // Connection
-        layout.addView(header(context, getString(R.string.TelezhkaSectionConnection)));
-        LinearLayout connection = card(context);
-        Switch autoSwitch = new Switch(context);
-        autoSwitch.setChecked(TelezhkaProxyAutopilot.isEnabled(), false);
-        LinearLayout autoRow = row(context, 0, 0, getString(R.string.TelezhkaAutopilotLabel), getString(R.string.TelezhkaAutopilotShort), autoSwitch);
-        autoRow.setOnClickListener(v -> {
-            boolean now = !TelezhkaProxyAutopilot.isEnabled();
-            TelezhkaProxyAutopilot.setEnabled(now);
-            autoSwitch.setChecked(now, true);
-        });
-        connection.addView(autoRow);
-        connection.addView(linkRow(context, getString(R.string.TelezhkaConnectionTitle), null, () -> presentFragment(new ProxyStatusActivity())));
-        layout.addView(connection);
-
-        // Updates
-        layout.addView(header(context, getString(R.string.TelezhkaSectionUpdates)));
-        LinearLayout updates = card(context);
-        String build = BuildVars.TELEZHKA_BUILD > 0 ? formatString(R.string.TelezhkaYourBuild, BuildVars.TELEZHKA_BUILD) : getString(R.string.TelezhkaLocalBuild);
-        updates.addView(linkRow(context, getString(R.string.TelezhkaCheckUpdates), build, () -> TelezhkaUpdater.checkNow(this, newer -> {
+        // Four sections as tiles, each with its current state
+        LinearLayout tiles1 = new LinearLayout(context);
+        LinearLayout tiles2 = new LinearLayout(context);
+        appearanceTile = tile(context, R.drawable.msg_theme, SIGNAL, getString(R.string.TelezhkaAppearanceTitle), () -> presentFragment(new TelezhkaAppearanceActivity()));
+        hiddenTile = tile(context, R.drawable.msg_secret, 0xFFB69CFF, getString(R.string.TelezhkaHiddenTitle), this::openHidden);
+        connectionTile = tile(context, R.drawable.msg_language, OK, getString(R.string.TelezhkaConnectionTitle), () -> presentFragment(new ProxyStatusActivity()));
+        updatesTile = tile(context, R.drawable.msg_retry, 0xFF6C8CFF, getString(R.string.TelezhkaSectionUpdates), () -> TelezhkaUpdater.checkNow(this, newer -> {
             if (newer == null) {
                 BulletinFactory.of(this).createErrorBulletin(getString(R.string.TelezhkaCheckFailed)).show();
             } else if (!newer) {
                 BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, getString(R.string.TelezhkaUpToDate)).show();
             }
-        })));
-        layout.addView(updates);
+        }));
+        tiles1.addView(appearanceTile, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 5, 0));
+        tiles1.addView(hiddenTile, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 5, 0, 0, 0));
+        tiles2.addView(connectionTile, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 5, 0));
+        tiles2.addView(updatesTile, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 5, 0, 0, 0));
+        layout.addView(tiles1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 10, 0, 0));
+        layout.addView(tiles2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 10, 0, 0));
+
+        // All switches in one card, short captions
+        layout.addView(header(context, getString(R.string.TelezhkaSectionFeatures)));
+        LinearLayout features = card(context);
+        features.addView(switchRow(context, R.drawable.telezhka_ic_ghost, 0xFFB69CFF, getString(R.string.TelezhkaGhostTitle), getString(R.string.TelezhkaGhostShortInfo), TelezhkaPrivacy.GHOST, true));
+        features.addView(switchRow(context, R.drawable.msg_delete, BAD, getString(R.string.TelezhkaKeepDeletedShort), getString(R.string.TelezhkaKeepDeletedShortInfo), TelezhkaPrivacy.KEEP_DELETED, false));
+        features.addView(switchRow(context, R.drawable.msg_download, OK, getString(R.string.TelezhkaSaveAllTitle), getString(R.string.TelezhkaSaveAllShortInfo), TelezhkaPrivacy.SAVE_ALL, true));
+        Switch autoSwitch = new Switch(context);
+        autoSwitch.setChecked(TelezhkaProxyAutopilot.isEnabled(), false);
+        LinearLayout autoRow = row(context, R.drawable.msg_speed, SIGNAL, getString(R.string.TelezhkaAutopilotLabel), getString(R.string.TelezhkaAutopilotShortInfo), autoSwitch);
+        autoRow.setOnClickListener(v -> {
+            boolean now = !TelezhkaProxyAutopilot.isEnabled();
+            TelezhkaProxyAutopilot.setEnabled(now);
+            autoSwitch.setChecked(now, true);
+            updateTiles();
+        });
+        features.addView(autoRow);
+        ImageView replyChevron = chevron(context);
+        autoReplyRow = row(context, R.drawable.msg_bot, 0xFF6C8CFF, getString(R.string.TelezhkaAutoReplyTitle), getString(R.string.TelezhkaAutoReplyRowOff), replyChevron);
+        autoReplyRow.setOnClickListener(v -> presentFragment(new TelezhkaAutoReplyActivity()));
+        features.addView(autoReplyRow);
+        layout.addView(features);
 
         // News channel
-        layout.addView(header(context, getString(R.string.TelezhkaSectionNews)));
         LinearLayout news = card(context);
         news.addView(linkRow(context, getString(R.string.TelezhkaNewsRow), "@" + BuildVars.NEWS_CHANNEL, () -> org.telegram.messenger.TelezhkaChannelPromo.showNow(this)));
-        layout.addView(news);
+        layout.addView(news, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
 
-        // Saving where it is forbidden: last, with the risk spelled out
-        layout.addView(header(context, getString(R.string.TelezhkaSectionSaving)));
-        LinearLayout saving = card(context);
-        saving.addView(switchRow(context, R.drawable.msg_download, OK, getString(R.string.TelezhkaSaveAllTitle), getString(R.string.TelezhkaSaveAllInfo), TelezhkaPrivacy.SAVE_ALL, true));
-        layout.addView(saving);
-        TextView risk = new TextView(context);
-        risk.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
-        risk.setTextColor(MUTE);
-        risk.setLineSpacing(dp(2), 1f);
-        risk.setText(getString(R.string.TelezhkaRiskNote));
-        risk.setPadding(dp(6), dp(10), dp(6), 0);
-        layout.addView(risk);
-
+        updateStatus();
+        updateTiles();
         fragmentView = root;
         return fragmentView;
     }
@@ -150,6 +174,123 @@ public class TelezhkaSettingsActivity extends BaseFragment {
     @Override
     public boolean isLightStatusBar() {
         return false;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        TelezhkaPingMonitor.start(pingListener, 3000);
+        updateStatus();
+        updateTiles();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        TelezhkaPingMonitor.stop(pingListener);
+    }
+
+    private void updateStatus() {
+        if (statusTitle == null) {
+            return;
+        }
+        int state = ConnectionsManager.getInstance(currentAccount).getConnectionState();
+        boolean connected = state == ConnectionsManager.ConnectionStateConnected || state == ConnectionsManager.ConnectionStateUpdating;
+        boolean proxy = SharedConfig.isProxyEnabled() && SharedConfig.currentProxy != null;
+        int spares = Math.max(0, SharedConfig.proxyList.size() - (proxy ? 1 : 0));
+        statusDot.setBackground(Theme.createCircleDrawable(dp(10), connected ? OK : SIGNAL));
+        if (!connected) {
+            statusTitle.setText(getString(R.string.TelezhkaConnectionConnecting));
+            statusInfo.setText(formatString(R.string.TelezhkaStatusSpares, spares));
+        } else if (proxy) {
+            statusTitle.setText(getString(R.string.TelezhkaStatusConnected));
+            long ping = TelezhkaPingMonitor.getLastPing();
+            statusInfo.setText(ping > 0 ? formatString(R.string.TelezhkaStatusViaProxyPing, ping, spares) : formatString(R.string.TelezhkaStatusViaProxy, spares));
+        } else {
+            statusTitle.setText(getString(R.string.TelezhkaStatusConnected));
+            statusInfo.setText(getString(R.string.TelezhkaStatusDirect));
+        }
+    }
+
+    private void updateTiles() {
+        if (appearanceTile == null) {
+            return;
+        }
+        String icon = "";
+        for (LauncherIconController.LauncherIcon i : LauncherIconController.LauncherIcon.values()) {
+            if (LauncherIconController.isEnabled(i)) {
+                icon = getString(i.title);
+            }
+        }
+        setTileInfo(appearanceTile, getString(TelezhkaAppearance.THEME_NAMES[TelezhkaAppearance.themeIndex()]) + (icon.isEmpty() ? "" : " · " + icon));
+        setTileInfo(hiddenTile, getString(TelezhkaHiddenChats.hasPin() ? R.string.TelezhkaPinIsSet : R.string.TelezhkaPinNotSet));
+        setTileInfo(connectionTile, getString(TelezhkaProxyAutopilot.isEnabled() ? R.string.TelezhkaTileAuto : R.string.TelezhkaTileManual));
+        setTileInfo(autoReplyRow, TelezhkaAutoReply.isEnabled() ? formatString(R.string.TelezhkaAutoReplyOn, TelezhkaAutoReply.answeredCount()) : getString(R.string.TelezhkaAutoReplyRowOff));
+        setTileInfo(updatesTile, BuildVars.TELEZHKA_BUILD > 0 ? formatString(R.string.TelezhkaTileBuild, BuildVars.TELEZHKA_BUILD) : getString(R.string.TelezhkaLocalBuildShort));
+    }
+
+    // Hidden chats: no PIN yet -> create one; otherwise how to open them and changing the PIN
+    private void openHidden() {
+        if (!TelezhkaHiddenChats.hasPin()) {
+            changePin();
+            return;
+        }
+        TelezhkaPopup popup = new TelezhkaPopup(getParentActivity());
+        popup.setIcon(R.drawable.msg_secret)
+                .setTitleText(getString(R.string.TelezhkaHiddenTitle))
+                .addDotItem(getString(R.string.TelezhkaHowToOpenHiddenInfo))
+                .setMainButton(getString(R.string.TelezhkaChangePin), v -> {
+                    popup.dismiss();
+                    changePin();
+                })
+                .setSecondaryButton(getString(R.string.Close), v -> popup.dismiss());
+        showDialog(popup);
+    }
+
+    private LinearLayout tile(Context context, int icon, int color, String title, Runnable onClick) {
+        LinearLayout tile = new LinearLayout(context);
+        tile.setOrientation(LinearLayout.VERTICAL);
+        tile.setPadding(dp(14), dp(14), dp(14), dp(14));
+        tile.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(20), PANEL, 0xFF1D222C));
+        tile.setMinimumHeight(dp(104));
+        FrameLayout box = new FrameLayout(context);
+        box.setBackground(Theme.createRoundRectDrawable(dp(12), (color & 0x00FFFFFF) | 0x29000000));
+        ImageView image = new ImageView(context);
+        image.setImageResource(icon);
+        image.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+        box.addView(image, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
+        tile.addView(box, LayoutHelper.createLinear(36, 36));
+        TextView titleView = new TextView(context);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        titleView.setTypeface(AndroidUtilities.bold());
+        titleView.setTextColor(TEXT);
+        titleView.setSingleLine(true);
+        titleView.setEllipsize(TextUtils.TruncateAt.END);
+        titleView.setText(title);
+        tile.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 14, 0, 0));
+        TextView infoView = new TextView(context);
+        infoView.setTag("info");
+        infoView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+        infoView.setTextColor(MUTE);
+        infoView.setSingleLine(true);
+        infoView.setEllipsize(TextUtils.TruncateAt.END);
+        tile.addView(infoView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        tile.setOnClickListener(v -> onClick.run());
+        return tile;
+    }
+
+    private static void setTileInfo(LinearLayout tile, String text) {
+        TextView info = tile.findViewWithTag("info");
+        if (info != null) {
+            info.setText(text);
+        }
+    }
+
+    private ImageView chevron(Context context) {
+        ImageView view = new ImageView(context);
+        view.setImageResource(R.drawable.msg_arrowright);
+        view.setColorFilter(new PorterDuffColorFilter(MUTE, PorterDuff.Mode.SRC_IN));
+        return view;
     }
 
     private void changePin() {
@@ -252,6 +393,7 @@ public class TelezhkaSettingsActivity extends BaseFragment {
             infoView.setTextColor(MUTE);
             infoView.setLineSpacing(dp(1.5f), 1f);
             infoView.setText(info);
+            infoView.setTag("info");
             texts.addView(infoView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 3, 0, 0));
         }
         row.addView(texts, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, trailing != null ? 12 : 0, 0));

@@ -137,6 +137,7 @@ import androidx.viewpager.widget.ViewPager;
 import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.TelezhkaAppearance;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -4316,7 +4317,7 @@ public class ChatActivity extends BaseFragment implements
                 audioCallIconItem = menu.lazilyAddItem(call, R.drawable.call, themeDelegate);
                 audioCallIconItem.setContentDescription(LocaleController.getString(R.string.Call));
                 userFull = getMessagesController().getUserFull(currentUser.id);
-                if (userFull != null && userFull.phone_calls_available) {
+                if (userFull != null && userFull.phone_calls_available && !TelezhkaAppearance.hideCallButton()) {
                     showAudioCallAsIcon = !inPreviewMode;
                     audioCallIconItem.setVisibility(View.VISIBLE);
                 } else {
@@ -24242,7 +24243,8 @@ public class ChatActivity extends BaseFragment implements
                     }
                 }
                 if (headerItem != null) {
-                    showAudioCallAsIcon = userInfo.phone_calls_available && !inPreviewMode;
+                    // "Оформление Тележки" can move the call button into the ⋮ menu
+                    showAudioCallAsIcon = userInfo.phone_calls_available && !inPreviewMode && !TelezhkaAppearance.hideCallButton();
                     if (userInfo.phone_calls_available) {
                         if (showAudioCallAsIcon) {
                             if (audioCallIconItem != null) {
@@ -29987,7 +29989,7 @@ public class ChatActivity extends BaseFragment implements
         super.setInPreviewMode(value);
         if (currentUser != null && audioCallIconItem != null) {
             TLRPC.UserFull userFull = getMessagesController().getUserFull(currentUser.id);
-            if (userFull != null && userFull.phone_calls_available) {
+            if (userFull != null && userFull.phone_calls_available && !TelezhkaAppearance.hideCallButton()) {
                 showAudioCallAsIcon = !inPreviewMode;
                 audioCallIconItem.setVisibility(View.VISIBLE);
             } else {

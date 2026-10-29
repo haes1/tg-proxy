@@ -129,10 +129,10 @@
 
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.VintageIcon"
+            android:name="org.telegram.messenger.TzDarkIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_6_launcher"
-            android:roundIcon="@mipmap/icon_6_launcher_round"
+            android:icon="@mipmap/tz_icon_dark"
+            android:roundIcon="@mipmap/tz_icon_dark_round"
             android:exported="true">
 
             <intent-filter>
@@ -142,13 +142,12 @@
             </intent-filter>
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity-alias>
-
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.AquaIcon"
+            android:name="org.telegram.messenger.TzNeonIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_4_launcher"
-            android:roundIcon="@mipmap/icon_4_launcher_round"
+            android:icon="@mipmap/tz_icon_neon"
+            android:roundIcon="@mipmap/tz_icon_neon_round"
             android:exported="true">
 
             <intent-filter>
@@ -158,13 +157,12 @@
             </intent-filter>
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity-alias>
-
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.PremiumIcon"
+            android:name="org.telegram.messenger.TzPeachIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_3_launcher"
-            android:roundIcon="@mipmap/icon_3_launcher_round"
+            android:icon="@mipmap/tz_icon_peach"
+            android:roundIcon="@mipmap/tz_icon_peach_round"
             android:exported="true">
 
             <intent-filter>
@@ -174,13 +172,13 @@
             </intent-filter>
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity-alias>
-
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.TurboIcon"
+            android:name="org.telegram.messenger.TzCalcIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_5_launcher"
-            android:roundIcon="@mipmap/icon_5_launcher_round"
+            android:icon="@mipmap/tz_icon_calc"
+            android:roundIcon="@mipmap/tz_icon_calc_round"
+            android:label="@string/TelezhkaIconCalc"
             android:exported="true">
 
             <intent-filter>
@@ -190,13 +188,13 @@
             </intent-filter>
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity-alias>
-
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.NoxIcon"
+            android:name="org.telegram.messenger.TzNotesIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_2_launcher"
-            android:roundIcon="@mipmap/icon_2_launcher_round"
+            android:icon="@mipmap/tz_icon_notes"
+            android:roundIcon="@mipmap/tz_icon_notes_round"
+            android:label="@string/TelezhkaIconNotes"
             android:exported="true">
 
             <intent-filter>
@@ -206,6 +204,11 @@
             </intent-filter>
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity-alias>
+
+
+
+
+
 
         <activity
             android:name="org.telegram.ui.LaunchActivity"

@@ -96,6 +96,7 @@ import org.telegram.ui.recyclerview.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
+import org.telegram.messenger.TelezhkaAppearance;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
@@ -12949,8 +12950,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (isArchive()) {
             newVisibility = !getStoriesController().getHiddenList().isEmpty();
         } else {
-            newVisibility = !onlySelfStories && getStoriesController().hasStories();
-            onlySelfStories = getStoriesController().hasOnlySelfStories();
+            // "Оформление Тележки" can hide the stories row above the chats
+            boolean hide = TelezhkaAppearance.hideStories();
+            newVisibility = !hide && !onlySelfStories && getStoriesController().hasStories();
+            onlySelfStories = !hide && getStoriesController().hasOnlySelfStories();
         }
 
         hasOnlySlefStories = onlySelfStories;

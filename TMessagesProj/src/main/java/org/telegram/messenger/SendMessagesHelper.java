@@ -2905,6 +2905,24 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     getMessagesController().processUpdates(updates, false);
                                 }
                                 getStatsController().incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_MESSAGES, sentCount);
+                            } else if (TelezhkaCopySend.isForwardRestricted(error)) {
+                                // Тележка "Скачивать всё": forwarding is forbidden there, so send copies instead of the failed forward
+                                final ArrayList<MessageObject> sources = new ArrayList<>();
+                                for (MessageObject source : messages) {
+                                    if (req.id.contains(source.getId())) {
+                                        sources.add(source);
+                                    }
+                                }
+                                AndroidUtilities.runOnUIThread(() -> {
+                                    ArrayList<Integer> placeholders = new ArrayList<>();
+                                    for (TLRPC.Message placeholder : newMsgObjArr) {
+                                        placeholders.add(placeholder.id);
+                                        removeFromSendingMessages(placeholder.id, scheduleDate != 0);
+                                    }
+                                    getMessagesController().deleteMessages(placeholders, null, null, peer, 0, false, scheduleDate != 0 ? ChatActivity.MODE_SCHEDULED : 0);
+                                    TelezhkaCopySend.send(currentAccount, sources, peer, notify, scheduleDate);
+                                });
+                                return;
                             } else {
                                 AndroidUtilities.runOnUIThread(() -> AlertsCreator.processError(currentAccount, error, null, req));
                             }

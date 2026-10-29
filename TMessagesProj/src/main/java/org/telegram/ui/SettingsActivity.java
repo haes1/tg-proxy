@@ -717,7 +717,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
 
         // Telezhka: our own settings come first, in a section of their own
-        items.add(SettingCell.Factory.of(100, 0xFFFF8A4C, 0xFFFF5A2A, R.drawable.telezhka_ic_plane, getString(R.string.TelezhkaSettingsTitle), getString(R.string.TelezhkaSettingsInfo)));
+        items.add(SettingCell.Factory.of(100, 0xFFFF8A4C, 0xFFFF5A2A, R.drawable.telezhka_ic_plane, getString(R.string.TelezhkaSettingsTitle)));
         items.add(UItem.asShadow(null));
 
         items.add(SettingCell.Factory.of(1, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.settings_account, getString(R.string.SettingsAccount), getString(R.string.SettingsAccountInfo)));

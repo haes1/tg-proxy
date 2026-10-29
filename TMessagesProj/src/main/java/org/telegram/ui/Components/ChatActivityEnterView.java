@@ -116,6 +116,7 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 import org.telegram.ui.recyclerview.ChatListItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import org.telegram.messenger.TelezhkaMentionAll;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
@@ -7388,6 +7389,15 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             }
             if (checkPremiumAnimatedEmoji(currentAccount, dialog_id, parentFragment, null, message)) {
+                return;
+            }
+            // Тележка: "@all" in a group becomes hidden mentions of every member, after a confirmation
+            if (TelezhkaMentionAll.intercept(parentFragment, currentAccount, dialog_id, message, expanded -> {
+                if (messageEditText != null) {
+                    messageEditText.setText(expanded);
+                }
+                sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, payStars, false);
+            })) {
                 return;
             }
             if (processSendingText(message, notify, scheduleDate, scheduleRepeatPeriod, payStars)) {

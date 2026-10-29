@@ -151,9 +151,28 @@ ConnectionsManager& ConnectionsManager::getInstance(int32_t instanceNum) {
             static ConnectionsManager instance3(3);
             return instance3;
         case 4:
-        default:
             static ConnectionsManager instance4(4);
             return instance4;
+        // Тележка: up to 10 accounts (MAX_ACCOUNT_COUNT in Defines.h), each needs its own instance
+        case 5:
+            static ConnectionsManager instance5(5);
+            return instance5;
+        case 6:
+            static ConnectionsManager instance6(6);
+            return instance6;
+        case 7:
+            static ConnectionsManager instance7(7);
+            return instance7;
+        case 8:
+            static ConnectionsManager instance8(8);
+            return instance8;
+        case 9:
+            static ConnectionsManager instance9(9);
+            return instance9;
+        case 10:
+        default:
+            static ConnectionsManager instance10(10);
+            return instance10;
     }
 }
 

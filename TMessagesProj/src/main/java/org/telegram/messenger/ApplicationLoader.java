@@ -356,6 +356,7 @@ public class ApplicationLoader extends Application {
         LauncherIconController.tryFixLauncherIconIfNeeded();
         ProxyRotationController.init();
         TelezhkaProxyAutopilot.init();
+        TelezhkaAutoReply.init();
 
         //if (BuildConfig.DEBUG_PRIVATE_VERSION) {
         //    Choreographer60FpsContent.getInstance().addFrameCallback(debugEverySecondChecks, 1);

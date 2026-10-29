@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 6-7: no adaptive icons, a plain shape with the same picture -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#0B0B1A" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/tz_icon_neon_foreground" />
+</layer-list>

@@ -34,12 +34,13 @@ public class LauncherIconController {
     }
 
     public enum LauncherIcon {
-        DEFAULT("DefaultIcon", R.drawable.icon_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconDefault),
-        VINTAGE("VintageIcon", R.drawable.icon_6_background_sa, R.mipmap.icon_6_foreground_sa, R.string.AppIconVintage),
-        AQUA("AquaIcon", R.drawable.icon_4_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconAqua),
-        PREMIUM("PremiumIcon", R.drawable.icon_3_background_sa, R.mipmap.icon_3_foreground_sa, R.string.AppIconPremium, true),
-        TURBO("TurboIcon", R.drawable.icon_5_background_sa, R.mipmap.icon_5_foreground_sa, R.string.AppIconTurbo, true),
-        NOX("NoxIcon", R.mipmap.icon_2_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconNox, true);
+        // Тележка's icons: all free; CALC and NOTES look like system apps, with their own name under the icon
+        DEFAULT("DefaultIcon", R.drawable.telezhka_icon_background, R.drawable.telezhka_icon_foreground, R.string.TelezhkaIconOrange),
+        DARK("TzDarkIcon", R.drawable.tz_icon_dark_background, R.drawable.tz_icon_dark_foreground, R.string.TelezhkaIconDark),
+        NEON("TzNeonIcon", R.drawable.tz_icon_neon_background, R.drawable.tz_icon_neon_foreground, R.string.TelezhkaIconNeon),
+        PEACH("TzPeachIcon", R.drawable.tz_icon_peach_background, R.drawable.tz_icon_peach_foreground, R.string.TelezhkaIconPeach),
+        CALC("TzCalcIcon", R.drawable.tz_icon_calc_background, R.drawable.tz_icon_calc_foreground, R.string.TelezhkaIconCalc),
+        NOTES("TzNotesIcon", R.drawable.tz_icon_notes_background, R.drawable.tz_icon_notes_foreground, R.string.TelezhkaIconNotes);
 
         public final String key;
         public final int background;
