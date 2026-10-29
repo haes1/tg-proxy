@@ -9,6 +9,7 @@ on:
       - 'proxies.json'
       - '.github/scripts/**'
       - '.github/workflows/update-proxies.yml'
+      - '.github/workflows/channel-posts.yml'
 
 concurrency:
   group: build-${{ github.ref }}
