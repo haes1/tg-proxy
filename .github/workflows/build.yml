@@ -105,6 +105,8 @@ jobs:
         run: |
           mkdir -p out
           cp "$(find TMessagesProj_App/build/outputs/apk -name '*.apk' | head -n 1)" out/Telezhka-${{ github.run_number }}.apk
+          # same file under a fixed name: the site links to releases/latest/download/Telezhka.apk
+          cp out/Telezhka-${{ github.run_number }}.apk out/Telezhka.apk
           ls -la out
 
       - name: Release notes
