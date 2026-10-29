@@ -1,13 +1,13 @@
 [
-  {"server": "redflag.yazaebalsyadelatproxy.co.uk", "port": 443, "secret": "ee69e899d89ec68e220ca177557322b27f726564666c61672e79617a616562616c73796164656c617470726f78792e6363"},
-  {"server": "redflag.yazaebalsyadelatproxy.uk", "port": 443, "secret": "ee69e899d89ec68e220ca177557322b27f726564666c61672e79617a616562616c73796164656c617470726f78792e6363"},
-  {"server": "pub.ultra-fast.cc", "port": 443, "secret": "ee5f07ed802882bdee7a7c46e5239b15c47075622e756c7472612d666173742e6363"},
-  {"server": "surf.suslik-cloud.com", "port": 443, "secret": "eed7f61466f824eafe116a533553e01bca737572662e7375736c696b2d636c6f75642e636f6d"},
   {"server": "as.mkim.click", "port": 443, "secret": "ee2dfa3526fc70b7abd7a09eade6ccea1f61732e6d6b696d2e636c69636b"},
   {"server": "max.kimt.click", "port": 443, "secret": "ee1b153cf06dbd43c6085c359a6702eb936d61782e6b696d742e636c69636b"},
+  {"server": "static.antenna-mzt.live", "port": 443, "secret": "ee5a42e3752e724f2fdae9c117e7f076fe73746f72652e737465616d706f77657265642e636f6d"},
+  {"server": "redflag.yazaebalsyadelatproxy.uk", "port": 443, "secret": "ee69e899d89ec68e220ca177557322b27f726564666c61672e79617a616562616c73796164656c617470726f78792e6363"},
+  {"server": "redflag.yazaebalsyadelatproxy.co.uk", "port": 443, "secret": "ee69e899d89ec68e220ca177557322b27f726564666c61672e79617a616562616c73796164656c617470726f78792e6363"},
+  {"server": "pub.ultra-fast.cc", "port": 443, "secret": "ee5f07ed802882bdee7a7c46e5239b15c47075622e756c7472612d666173742e6363"},
+  {"server": "surf.suslik-cloud.com", "port": 443, "secret": "eed7f61466f824eafe116a533553e01bca737572662e7375736c696b2d636c6f75642e636f6d"},
   {"server": "shared.ddproxy.xyz", "port": 443, "secret": "eedddddddddddddddddddddddddddddddd6d2e6265626f6f2e7275"},
   {"server": "chestno.servera-dlya-tg-zdes-net.abrdns.com", "port": 443, "secret": "eea65c7fc5a0d5669ba371a7ca88fc19496f7a6f6e2e7275"},
-  {"server": "static.antenna-mzt.live", "port": 443, "secret": "ee5a42e3752e724f2fdae9c117e7f076fe73746f72652e737465616d706f77657265642e636f6d"},
   {"server": "edge.turboass.live", "port": 443, "secret": "ee51116f4018a2b3dfc9bda286c52afe9f656467652e747572626f6173732e6c697665"},
   {"server": "pub.ultra-fast.cc", "port": 443, "secret": "ee68a7c4e0b9d30660f8b4d35bb3b8e4347075622e756c7472612d666173742e6363"},
   {"server": "superdetka3.noblok.org", "port": 443, "secret": "ee59523800f28b6c8384f93860bf95630274726173682e6e6f626c6f6b2e6f7267"},
@@ -24,11 +24,5 @@
   {"server": "gram.blog", "port": 853, "secret": "ee695c0e4188358e4ebb6d7a489185f6a96d742e6772616d2e796f75"},
   {"server": "pub.ultra-fast.cc", "port": 443, "secret": "eea562438851e9a2f0631d84ea777c329b7075622e756c7472612d666173742e6363"},
   {"server": "argon-acorn.velvetoak.work", "port": 443, "secret": "ee9c61297d8f32d855712bd6c9bfad3fd76172676f6e2d61636f726e2e76656c7665746f616b2e776f726b"},
-  {"server": "argon-acorn.driftquill.click", "port": 443, "secret": "ee9c61297d8f32d855712bd6c9bfad3fd76172676f6e2d61636f726e2e64726966747175696c6c2e636c69636b"},
-  {"server": "beryl-sky.velvetoak.work", "port": 443, "secret": "eee9d789556129383a1bfcf42889efc617626572796c2d736b792e76656c7665746f616b2e776f726b"},
-  {"server": "beryl-sky.driftquill.click", "port": 443, "secret": "eee9d789556129383a1bfcf42889efc617626572796c2d736b792e64726966747175696c6c2e636c69636b"},
-  {"server": "cameo-crimson.velvetoak.work", "port": 443, "secret": "ee56cd3af2edbf57dcd353d3923be3adba63616d656f2d6372696d736f6e2e76656c7665746f616b2e776f726b"},
-  {"server": "cameo-crimson.driftquill.click", "port": 443, "secret": "ee56cd3af2edbf57dcd353d3923be3adba63616d656f2d6372696d736f6e2e64726966747175696c6c2e636c69636b"},
-  {"server": "cascade-shell.velvetoak.work", "port": 443, "secret": "eeacd5376351a5d15d667238ecc64112ff636173636164652d7368656c6c2e76656c7665746f616b2e776f726b"},
-  {"server": "cascade-shell.driftquill.click", "port": 443, "secret": "eeacd5376351a5d15d667238ecc64112ff636173636164652d7368656c6c2e64726966747175696c6c2e636c69636b"}
+  {"server": "argon-acorn.driftquill.click", "port": 443, "secret": "ee9c61297d8f32d855712bd6c9bfad3fd76172676f6e2d61636f726e2e64726966747175696c6c2e636c69636b"}
 ]
