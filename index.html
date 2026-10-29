@@ -7,7 +7,29 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20120%20120%22%3E%3Crect%20width%3D%22120%22%20height%3D%22120%22%20rx%3D%2228%22%20fill%3D%22%23FF6B3D%22/%3E%3Cpath%20d%3D%22M24%2058%20L94%2030%20L80%2084%20L60%2070%20L52%2084%20L50%2066%20Z%22%20fill%3D%22%23fff%22/%3E%3Cpath%20d%3D%22M50%2066%20L88%2036%20L60%2070%22%20fill%3D%22%23FFD9CC%22/%3E%3C/svg%3E">
 <meta property="og:title" content="Тележка — Telegram снова работает">
 <meta property="og:description" content="Telegram для Android, который сам находит обходной путь. Без VPN и настроек.">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+/* channel posts, copied to channel/posts.json by a GitHub Action (Telegram itself is not loaded) */
+.news-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px 40px;flex-wrap:wrap}
+.news-head p{color:var(--gray);font-size:19px;max-width:34em;margin-top:14px}
+.news{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(300px,380px);gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;margin-top:40px;padding:4px 4px 26px;scrollbar-width:thin}
+.post{scroll-snap-align:start;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:28px;padding:22px 22px 18px;box-shadow:0 18px 40px -28px rgba(20,18,28,.35)}
+.post-top{display:flex;align-items:center;gap:12px}
+.post-top svg{width:44px;height:44px;flex:none}
+.post-top b{display:block;font-size:17px;line-height:1.2}
+.post-top small{display:block;font-size:14px;color:var(--gray-2);font-weight:600}
+.post-img{position:relative;margin-top:16px;border-radius:18px;overflow:hidden;aspect-ratio:16/10;background:var(--tint)}
+.post-img img{width:100%;height:100%;object-fit:cover;display:block}
+.post-img.video::after{content:"";position:absolute;inset:0;margin:auto;width:58px;height:58px;border-radius:50%;background:rgba(20,18,28,.6) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 7l9 5-9 5z' fill='%23fff'/%3E%3C/svg%3E") center/30px no-repeat}
+.post-text{margin-top:14px;font-size:16.5px;line-height:1.55;color:var(--ink);overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:9;overflow:hidden}
+.post.open .post-text{display:block}
+.post-text a{color:var(--orange-ink)}
+.post-text blockquote{margin:8px 0;padding-left:12px;border-left:3px solid var(--orange)}
+.post-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:auto;padding-top:16px}
+.post-more{border:0;background:none;padding:6px 0;font:inherit;font-size:16px;font-weight:800;color:var(--orange-ink);cursor:pointer}
+.post-open{font-size:15px;font-weight:700;color:var(--gray-2);text-decoration:none}
+.post-open:hover{color:var(--ink)}
+@media (max-width:640px){.news{grid-auto-columns:86%}}
+</style>
 <title>Тележка</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Telegram для Android, который сам находит обходной путь. Без VPN и настроек.">
@@ -480,6 +502,20 @@ summary::after{background:#fff}
     </div>
   </section>
 
+  <section id="news" style="padding-top:0" hidden>
+    <div class="wrap">
+      <div class="news-head">
+        <div>
+          <span class="kicker rv">Канал Тележки</span>
+          <h2 class="rv">Новости <span>из первых рук</span></h2>
+          <p class="rv">Что вышло в обновлениях и что готовим дальше. Посты из нашего канала, открываются даже когда Telegram не грузится.</p>
+        </div>
+        <a class="btn light sm" href="tg://resolve?domain=teleskaoff">Открыть канал в Тележке</a>
+      </div>
+      <div class="news" id="news-list"></div>
+    </div>
+  </section>
+
   <section id="faq" style="padding-top:0">
     <div class="wrap">
       <span class="kicker rv">Вопросы</span>
@@ -572,5 +608,36 @@ spares.forEach(s => s.addEventListener('click', () => spares.forEach(x => x.setA
 })();
 </script>
 
+<script>
+// channel posts: channel/posts.json lies next to this page, nothing is loaded from Telegram
+(function(){
+  var sec=document.getElementById('news'), list=document.getElementById('news-list');
+  if(!sec||!window.fetch) return;
+  var months=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  function day(iso){var d=new Date(iso);return isNaN(d)?'':d.getDate()+' '+months[d.getMonth()];}
+  fetch('channel/posts.json',{cache:'no-cache'}).then(function(r){return r.json();}).then(function(data){
+    var posts=(data&&data.posts)||[];
+    if(!posts.length) return;
+    posts.forEach(function(p){
+      var a=document.createElement('article');
+      a.className='post';
+      a.innerHTML='<div class="post-top"><svg aria-hidden="true"><use href="#logo"/></svg><div><b>Тележка</b><small>'+day(p.date)+'</small></div></div>'+
+        (p.img?'<div class="post-img'+(p.video?' video':'')+'"><img loading="lazy" alt="" src="'+p.img+'"></div>':'')+
+        '<div class="post-text">'+p.html+'</div>'+
+        '<div class="post-foot"><button class="post-more" type="button" hidden>Читать полностью</button>'+
+        '<a class="post-open" href="tg://resolve?domain='+data.channel+'&post='+p.id+'">Открыть в Тележке →</a></div>';
+      list.appendChild(a);
+    });
+    sec.hidden=false;
+    list.querySelectorAll('.post').forEach(function(a){
+      var t=a.querySelector('.post-text'), b=a.querySelector('.post-more');
+      if(t.scrollHeight>t.clientHeight+4){
+        b.hidden=false;
+        b.onclick=function(){var o=a.classList.toggle('open');b.textContent=o?'Свернуть':'Читать полностью';};
+      }
+    });
+  }).catch(function(){});
+})();
+</script>
 </body>
 </html>
